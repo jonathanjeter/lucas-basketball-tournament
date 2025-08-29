@@ -1,0 +1,12 @@
+/* Basketball Tournament App Styles */
+/* Most styling handled by Tailwind CSS */
+
+/* Remove default Vite styles that conflict with Tailwind */
+#root {
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  max-width: none;
+}
+
+/* Any custom app-specific styles can go here */

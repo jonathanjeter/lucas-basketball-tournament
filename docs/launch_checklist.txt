@@ -1,0 +1,355 @@
+# 🏀 Basketball Tournament Launch Checklist
+**Lucas Jeter Eagle Scout Fundraiser - August 30, 2025**
+
+## Pre-Launch Phase (24-48 hours before)
+
+### ✅ Environment Configuration
+- [ ] **Production Environment Variables Set**
+  ```bash
+  VITE_SUPABASE_URL=https://your-project.supabase.co
+  VITE_SUPABASE_ANON_KEY=[production-key]
+  VITE_PAYPAL_CLIENT_ID=[production-paypal-id]
+  VITE_EMAILJS_SERVICE_ID=[emailjs-service]
+  VITE_EMAILJS_TEMPLATE_ID=[emailjs-template]
+  VITE_EMAILJS_PUBLIC_KEY=[emailjs-public-key]
+  ```
+
+- [ ] **Database Configuration**
+  - [ ] All tables created (teams, players, sponsors, volunteers, payments)
+  - [ ] Row Level Security policies configured
+  - [ ] Storage bucket `sponsor-logos` created with public access
+  - [ ] Database backups enabled
+
+- [ ] **Domain & SSL**
+  - [ ] Domain `lucasjeter.com` points to Vercel deployment
+  - [ ] SSL certificate active and valid
+  - [ ] WWW redirect configured
+  - [ ] DNS propagation complete (check with `dig lucasjeter.com`)
+
+### ✅ Payment Processing
+- [ ] **PayPal Integration**
+  - [ ] PayPal business account verified
+  - [ ] Production client ID/secret configured
+  - [ ] Webhook endpoints configured in PayPal dashboard
+  - [ ] Test transaction completed successfully
+  - [ ] Webhook URL: `https://lucasjeter.com/api/payments/webhook`
+
+- [ ] **Alternative Payment Methods**
+  - [ ] Venmo username confirmed: `@LucasJeter`
+  - [ ] CashApp handle confirmed: `$LucasJeter`
+  - [ ] Manual payment instructions clear and accurate
+
+### ✅ Email System
+- [ ] **EmailJS Configuration**
+  - [ ] EmailJS account active and templates configured
+  - [ ] Registration confirmation template tested
+  - [ ] Admin notification template tested
+  - [ ] Email delivery test completed to multiple providers (Gmail, Yahoo, Outlook)
+  - [ ] Spam folder testing completed
+
+- [ ] **Email Templates Include**
+  - [ ] Tournament date and time
+  - [ ] Location details
+  - [ ] What to bring/expect
+  - [ ] Contact information
+  - [ ] Payment confirmation details
+
+### ✅ Content & Information
+- [ ] **Tournament Details Updated**
+  - [ ] Date: August 30, 2025
+  - [ ] Time: [INSERT ACTUAL TIME]
+  - [ ] Location: [INSERT ACTUAL LOCATION]
+  - [ ] Registration deadline: [INSERT DEADLINE]
+  - [ ] Team size requirements: 3 players + 1 substitute
+
+- [ ] **Legal & Compliance**
+  - [ ] Liability waivers included in registration
+  - [ ] Parent consent forms for minors
+  - [ ] Emergency contact information collected
+  - [ ] Privacy policy published
+  - [ ] Terms of service published
+
+## Launch Day Phase (Day of Launch)
+
+### ✅ System Status Check
+- [ ] **Infrastructure Health**
+  - [ ] Vercel deployment status: GREEN
+  - [ ] Supabase database status: OPERATIONAL
+  - [ ] Domain accessibility: WORKING
+  - [ ] SSL certificate: VALID
+  - [ ] CDN performance: OPTIMAL
+
+- [ ] **Functionality Testing**
+  - [ ] Registration form submission: WORKING
+  - [ ] Payment processing: WORKING
+  - [ ] Email confirmations: SENDING
+  - [ ] Admin dashboard: ACCESSIBLE
+  - [ ] Mobile experience: OPTIMIZED
+
+### ✅ Performance Monitoring
+- [ ] **Metrics Baseline**
+  - [ ] Page load speed < 3 seconds
+  - [ ] First Contentful Paint < 1.8s
+  - [ ] Largest Contentful Paint < 2.5s
+  - [ ] Cumulative Layout Shift < 0.1
+  - [ ] Lighthouse performance score > 90
+
+- [ ] **Database Performance**
+  - [ ] Query response times < 100ms
+  - [ ] Connection pool utilization < 80%
+  - [ ] No timeout errors
+  - [ ] Backup processes running
+
+### ✅ Security Verification
+- [ ] **Security Headers**
+  - [ ] Content Security Policy configured
+  - [ ] X-Frame-Options set
+  - [ ] X-Content-Type-Options set
+  - [ ] Strict-Transport-Security configured
+
+- [ ] **Input Validation**
+  - [ ] SQL injection prevention active
+  - [ ] XSS protection implemented
+  - [ ] File upload restrictions enforced
+  - [ ] Rate limiting configured
+
+## Post-Launch Phase (First 2 hours)
+
+### ✅ Monitoring & Alerts
+- [ ] **User Activity Monitoring**
+  - [ ] Registration submissions tracked
+  - [ ] Error rates monitored
+  - [ ] Payment success rates tracked
+  - [ ] Email delivery rates monitored
+
+- [ ] **System Health**
+  - [ ] Server response times normal
+  - [ ] Database query performance stable
+  - [ ] No error spikes in logs
+  - [ ] Memory and CPU usage normal
+
+### ✅ User Support
+- [ ] **Communication Channels**
+  - [ ] Contact email monitored: [INSERT CONTACT EMAIL]
+  - [ ] Phone support available: [INSERT PHONE NUMBER]
+  - [ ] Social media accounts monitored
+  - [ ] FAQ section published and accessible
+
+- [ ] **Issue Response Plan**
+  - [ ] Response time target: < 15 minutes during business hours
+  - [ ] Escalation procedures documented
+  - [ ] Emergency contacts notified
+  - [ ] Backup support personnel identified
+
+## Success Metrics (24 hours post-launch)
+
+### ✅ Technical Metrics
+- [ ] **Performance**
+  - [ ] 99.9% uptime maintained
+  - [ ] < 1% error rate
+  - [ ] Average page load < 3 seconds
+  - [ ] No critical security incidents
+
+- [ ] **User Engagement**
+  - [ ] Registration conversion rate > 70%
+  - [ ] Payment completion rate > 85%
+  - [ ] Email delivery rate > 95%
+  - [ ] Mobile usage > 60% of total traffic
+
+### ✅ Business Metrics
+- [ ] **Registration Goals**
+  - [ ] Target: [INSERT TARGET NUMBER] registrations
+  - [ ] Fundraising goal: $400 minimum
+  - [ ] Sponsor participation: [INSERT TARGET]
+  - [ ] Volunteer signups: [INSERT TARGET]
+
+---
+
+# 🚨 Emergency Procedures
+
+## Critical Issue Response Plan
+
+### Level 1: Site Down/Inaccessible
+**Symptoms**: Users cannot access the website
+**Response Time**: IMMEDIATE (0-5 minutes)
+
+**Immediate Actions**:
+1. Check Vercel deployment status: `https://vercel.com/[your-account]/lucas-basketball-tournament`
+2. Check domain DNS: `dig lucasjeter.com`
+3. Check SSL certificate: `openssl s_client -connect lucasjeter.com:443`
+4. Check CDN status
+
+**Resolution Steps**:
+```bash
+# 1. Redeploy from GitHub
+git push origin main  # Trigger automatic deployment
+
+# 2. Manual Vercel deployment
+vercel --prod
+
+# 3. DNS flush if needed
+# Contact Cloudflare support if DNS issues persist
+```
+
+**Fallback Plan**: Activate backup static registration page with Google Forms
+
+### Level 2: Registration Form Not Working
+**Symptoms**: Form submissions fail, users cannot register
+**Response Time**: URGENT (5-15 minutes)
+
+**Immediate Actions**:
+1. Check Supabase database status: `https://app.supabase.com/project/[project-id]`
+2. Test database connectivity:
+   ```bash
+   curl -H "apikey: [anon-key]" "https://[project].supabase.co/rest/v1/teams?select=count"
+   ```
+3. Check API endpoints: `/api/register`
+
+**Resolution Steps**:
+```bash
+# 1. Check database connection
+node scripts/validate-db.js
+
+# 2. Reset RLS policies if needed
+# Access Supabase dashboard → Authentication → RLS
+
+# 3. Restart services if necessary
+# Supabase services auto-restart, monitor status
+```
+
+**Fallback Plan**: Switch to Google Forms with manual data entry
+
+### Level 3: Payment Processing Failure
+**Symptoms**: PayPal payments fail, users cannot complete registration
+**Response Time**: HIGH (15-30 minutes)
+
+**Immediate Actions**:
+1. Check PayPal developer dashboard: `https://developer.paypal.com`
+2. Test PayPal API connectivity
+3. Review webhook endpoint logs: `/api/payments/webhook`
+
+**Resolution Steps**:
+```bash
+# 1. Test PayPal connection
+curl -X POST "https://api.paypal.com/v1/oauth2/token" \
+  -H "Accept: application/json" \
+  -d "grant_type=client_credentials"
+
+# 2. Check webhook configuration
+# PayPal Dashboard → Apps → Your App → Webhooks
+
+# 3. Manual payment verification
+# Process payments manually if needed
+```
+
+**Fallback Plan**: Accept manual payments (Venmo/CashApp) with admin verification
+
+### Level 4: Email System Failure
+**Symptoms**: Confirmation emails not sending
+**Response Time**: MEDIUM (30-60 minutes)
+
+**Immediate Actions**:
+1. Check EmailJS dashboard: `https://dashboard.emailjs.com`
+2. Test email delivery manually
+3. Check spam folder delivery rates
+
+**Resolution Steps**:
+```bash
+# 1. Test EmailJS service
+node scripts/validate-email.js
+
+# 2. Check email template configuration
+# EmailJS Dashboard → Email Templates
+
+# 3. Monitor email delivery rates
+# Check multiple email providers (Gmail, Yahoo, Outlook)
+```
+
+**Fallback Plan**: Manual email confirmations with contact list compilation
+
+## Emergency Contacts
+
+### Technical Support
+- **Primary Developer**: [INSERT CONTACT INFO]
+- **Backup Developer**: [INSERT CONTACT INFO]
+- **System Administrator**: [INSERT CONTACT INFO]
+
+### Service Providers
+- **Vercel Support**: `https://vercel.com/help`
+- **Supabase Support**: `https://supabase.com/docs/support`
+- **PayPal Technical Support**: `https://developer.paypal.com/support/`
+- **Cloudflare Support**: `https://www.cloudflare.com/support/`
+
+### Business Stakeholders
+- **Lucas Jeter (Project Owner)**: [INSERT CONTACT INFO]
+- **Eagle Scout Advisor**: [INSERT CONTACT INFO]
+- **Sons of American Revolution Contact**: [INSERT CONTACT INFO]
+
+## Communication Plan
+
+### Internal Communication
+1. **Immediate notification** to technical team via [INSERT CHANNEL]
+2. **Status updates** every 15 minutes during incident
+3. **Resolution confirmation** when issue resolved
+4. **Post-incident review** within 24 hours
+
+### External Communication
+1. **User notification** via website banner if downtime > 30 minutes
+2. **Social media update** if issue affects > 100 users
+3. **Email notification** to registered users if data affected
+4. **Press communication** if fundraising goals impacted
+
+## Rollback Procedures
+
+### Database Rollback
+```bash
+# 1. Access Supabase dashboard
+# 2. Navigate to Database → Backups
+# 3. Restore from latest stable backup
+# 4. Verify data integrity
+```
+
+### Application Rollback
+```bash
+# 1. Revert to last known good commit
+git revert HEAD
+
+# 2. Force deployment
+git push origin main
+
+# 3. Verify rollback success
+curl https://lucasjeter.com/health
+```
+
+### DNS Rollback
+```bash
+# 1. Access Cloudflare dashboard
+# 2. Revert DNS records to previous configuration
+# 3. Wait for propagation (up to 24 hours)
+```
+
+## Post-Incident Procedures
+
+### Documentation
+1. **Incident timeline**: Start/end times, actions taken
+2. **Root cause analysis**: Technical and process causes
+3. **Impact assessment**: Users affected, revenue lost, reputation damage
+4. **Lessons learned**: What worked, what didn't, improvements needed
+
+### Process Improvements
+1. **Monitoring enhancements**: Additional alerts, better dashboards
+2. **Testing improvements**: More comprehensive test coverage
+3. **Documentation updates**: Runbooks, troubleshooting guides
+4. **Training updates**: Team knowledge sharing, skill development
+
+### Stakeholder Communication
+1. **Technical team debrief**: Within 24 hours
+2. **Business stakeholder update**: Within 48 hours
+3. **User communication**: As needed based on impact
+4. **Public postmortem**: If significant impact to reputation
+
+---
+
+**Remember**: The tournament is about supporting Lucas's Eagle Scout project and the Sons of American Revolution headstone cleaning service. Technical issues are solvable, but the mission remains the priority. Keep calm, work systematically, and communicate clearly.
+
+**Final Check**: Before declaring launch successful, ensure at least one complete end-to-end registration (including payment) has been tested by someone outside the development team.
