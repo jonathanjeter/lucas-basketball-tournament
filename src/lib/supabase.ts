@@ -62,19 +62,43 @@ export const testConnection = async () => {
 // Get comprehensive fundraising statistics
 export const getFundraisingStats = async () => {
   try {
-    const { data, error } = await supabase.rpc('get_fundraising_stats')
+    // Query teams and calculate stats directly
+    const { data: teams, error: teamsError } = await supabase
+      .from('teams')
+      .select('donation_amount, approved')
     
-    if (error) throw error
+    if (teamsError) throw teamsError
     
-    const stats = data?.[0] || {
-      total_raised: 0,
+    // Query total players count
+    const { count: playersCount, error: playersError } = await supabase
+      .from('players')
+      .select('*', { count: 'exact', head: true })
+    
+    if (playersError) throw playersError
+    
+    // Query sponsors count
+    const { count: sponsorsCount, error: sponsorsError } = await supabase
+      .from('sponsors')
+      .select('*', { count: 'exact', head: true })
+    
+    if (sponsorsError) throw sponsorsError
+    
+    // Calculate stats from the data
+    const registeredTeams = teams?.length || 0
+    const approvedTeams = teams?.filter(team => team.approved)?.length || 0
+    const totalRaised = teams?.reduce((sum, team) => sum + (team.donation_amount || 0), 0) || 0
+    
+    const stats = {
+      total_raised: totalRaised,
       goal: 400,
-      registered_teams: 0,
-      registered_players: 0,
-      total_sponsors: 0,
-      approved_teams: 0,
-      approved_sponsors: 0
+      registered_teams: registeredTeams,
+      registered_players: playersCount || 0,
+      total_sponsors: sponsorsCount || 0,
+      approved_teams: approvedTeams,
+      approved_sponsors: sponsorsCount || 0
     }
+    
+    console.log('📊 Fundraising stats calculated:', stats)
     
     return { data: stats, error: null }
   } catch (error) {
