@@ -29,21 +29,14 @@ export const BracketsPage: React.FC = () => {
   ];
 
   const schedule = [
-    { time: "8:00 AM", event: "Check-in Opens", description: "Team registration and payment collection" },
-    { time: "8:30 AM", event: "Tournament Brief", description: "Rules explanation and bracket announcement" },
-    { time: "9:00 AM", event: "Round 1 Begins", description: "Junior and Senior divisions start simultaneously" },
-    { time: "11:00 AM", event: "Round 2", description: "Second round of games" },
-    { time: "1:00 PM", event: "Lunch Break", description: "Food and refreshments available" },
-    { time: "1:30 PM", event: "Round 3", description: "Final round of regular games" },
-    { time: "3:00 PM", event: "Championship", description: "Division championship games" },
-    { time: "4:00 PM", event: "Awards Ceremony", description: "Trophy presentation and sponsor recognition" }
+    { time: "7:30 AM", event: "Check-in Opens", description: "Team registration and payment collection - Walk-ins welcome!" },
+    { time: "8:00 AM", event: "Tournament Begins", description: "Games start - Both divisions play simultaneously" },
+    { time: "9:00 AM", event: "Round 1 Continues", description: "First round of tournament games" },
+    { time: "10:00 AM", event: "Round 2", description: "Second round of games" },
+    { time: "11:00 AM", event: "Championship Rounds", description: "Final games and championships" },
+    { time: "12:00 PM", event: "Tournament Ends", description: "Tournament concludes - Thank you for playing!" }
   ];
 
-  const prizes = [
-    { place: "1st Place", prize: "Championship Trophy + $100 Prize", color: "text-yellow-600" },
-    { place: "2nd Place", prize: "Runner-up Trophy + $50 Prize", color: "text-gray-600" },
-    { place: "3rd Place", prize: "Bronze Trophy + $25 Prize", color: "text-orange-600" }
-  ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -85,7 +78,7 @@ export const BracketsPage: React.FC = () => {
                 <Calendar className="h-6 w-6 text-blue-600" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Date & Time</h3>
-              <p className="text-gray-600">Saturday, August 30, 2025<br />8:00 AM - 5:00 PM</p>
+              <p className="text-gray-600">Saturday, August 30, 2025<br />7:30 AM Check-in | 8:00 AM - 12:00 PM Tournament</p>
             </div>
             
             <div className="text-center">
@@ -93,7 +86,7 @@ export const BracketsPage: React.FC = () => {
                 <MapPin className="h-6 w-6 text-blue-600" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Location</h3>
-              <p className="text-gray-600">Waxahachie High School<br />Outdoor Basketball Courts</p>
+              <p className="text-gray-600">Finley Junior High School Gym<br />2401 Brown St, Waxahachie, TX 75165</p>
             </div>
             
             <div className="text-center">
@@ -188,42 +181,6 @@ export const BracketsPage: React.FC = () => {
         </Card>
       </motion.div>
 
-      {/* Prizes */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mb-16"
-      >
-        <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-            Tournament Prizes
-          </h2>
-          <p className="text-xl text-gray-600">
-            Awards for both Junior and Senior Division winners
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {prizes.map((prize, index) => (
-            <motion.div
-              key={prize.place}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="p-6 text-center h-full">
-                <div className="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4 mx-auto">
-                  <Trophy className={`h-8 w-8 ${prize.color}`} />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">{prize.place}</h3>
-                <p className="text-gray-600">{prize.prize}</p>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
 
       {/* Live Brackets Coming Soon */}
       <motion.div

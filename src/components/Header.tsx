@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBasket as Basketball, Menu, X } from 'lucide-react';
+import { ShoppingBasket as Basketball, Menu, X, Database } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { environmentInfo } from '../lib/supabase';
 
 export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -22,8 +23,22 @@ export const Header: React.FC = () => {
         <div className="flex justify-between items-center py-4">
           <Link to="/" className="flex items-center space-x-3">
             <Basketball className="h-8 w-8 text-orange-500" />
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">3-on-3 Hoops</h1>
+            <div className="flex flex-col">
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl font-bold text-gray-900">3-on-3 Hoops</h1>
+                {/* Environment Indicator */}
+                {environmentInfo.isStaging ? (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                    <Database className="w-3 h-3 mr-1" />
+                    STAGING
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                    <Database className="w-3 h-3 mr-1" />
+                    PRODUCTION
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-gray-600">Eagle Scout Fundraiser</p>
             </div>
           </Link>

@@ -40,7 +40,7 @@ export const RegisterPage: React.FC = () => {
               </div>
             </div>
             <p className="text-sm text-gray-600 mt-4">
-              $40+ donations receive recognition. Individual supporters welcome alongside businesses.
+              $20+ individual donations or $40+ business donations receive recognition. Individual supporters welcome alongside businesses.
             </p>
           </Card>
         </div>

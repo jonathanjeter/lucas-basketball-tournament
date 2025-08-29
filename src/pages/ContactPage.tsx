@@ -32,16 +32,20 @@ const tournamentSchema = baseSchema.extend({
 });
 
 const sponsorshipSchema = baseSchema.extend({
-  company: z.string().min(1, 'Company name is required'),
+  company: z.string().optional(), // Made optional for individual supporters
   phone: z.string().min(1, 'Phone number is required'),
   donationType: z.enum(['monetary', 'items']),
-  amount: z.number().min(40).optional(),
+  amount: z.number().min(20).optional(), // Changed from 40 to 20 for individual supporters
   itemDescription: z.string().optional(),
   website: z.string().url().optional().or(z.literal('')),
   questions: z.string().optional(),
 }).refine((data) => {
-  if (data.donationType === 'monetary' && (!data.amount || data.amount < 40)) {
-    return false;
+  if (data.donationType === 'monetary') {
+    // Individual supporters: $20 minimum, Business sponsors: $40 minimum
+    const minimumAmount = data.company && data.company.trim() ? 40 : 20;
+    if (!data.amount || data.amount < minimumAmount) {
+      return false;
+    }
   }
   if (data.donationType === 'items' && !data.itemDescription) {
     return false;
@@ -138,6 +142,7 @@ export const ContactPage: React.FC = () => {
   ];
 
   const donationType = watch('donationType' as any);
+  const company = watch('company' as any);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -306,10 +311,10 @@ export const ContactPage: React.FC = () => {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Company/Organization Name"
+                  label="Company/Organization Name (Optional for Individuals)"
                   {...register('company')}
                   error={errors.company?.message}
-                  required
+                  helper="Leave blank if donating as an individual"
                 />
                 <Input
                   label="Contact Name"
@@ -363,10 +368,10 @@ export const ContactPage: React.FC = () => {
                 <Input
                   label="Donation Amount"
                   type="number"
-                  min="40"
+                  min={company && company.trim() ? "40" : "20"}
                   {...register('amount', { valueAsNumber: true })}
                   error={errors.amount?.message}
-                  helper="Minimum $40 for logo display on website"
+                  helper={company && company.trim() ? "Minimum $40 for business sponsors (logo display)" : "Minimum $20 for individual supporters"}
                   required
                 />
               )}

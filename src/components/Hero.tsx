@@ -39,7 +39,7 @@ export const Hero: React.FC<HeroProps> = ({ fundraisingStats, loading = false })
                 <Calendar className="h-6 w-6 text-orange-400" />
                 <div>
                   <div>Saturday, August 30, 2025</div>
-                  <div className="text-sm text-blue-200">Check-in: 7:30 AM | Games start: 8:00 AM</div>
+                  <div className="text-sm text-blue-200">Check-in: 7:30-8:00 AM | Tournament: 8:00 AM-12:00 PM</div>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
@@ -55,15 +55,29 @@ export const Hero: React.FC<HeroProps> = ({ fundraisingStats, loading = false })
               </div>
             </div>
 
-            <p className="text-xl mb-8 text-blue-100">
+            <p className="text-xl mb-6 text-blue-100">
               Join us for an exciting day of basketball competition while supporting a great cause! 
               All proceeds go toward funding an Eagle Scout service project.
             </p>
 
+            {/* Walk-in Welcome Banner */}
+            <div className="bg-orange-500 border-2 border-orange-400 rounded-lg p-4 mb-8">
+              <div className="text-center">
+                <div className="text-xl font-bold text-white mb-2">🏀 WALK-INS WELCOME! 🏀</div>
+                <div className="text-white mb-2">
+                  No pre-registration required! Just show up tomorrow morning at 7:30 AM ready to play.
+                </div>
+                <div className="text-sm text-orange-100">
+                  $10 suggested donation per player supports the Eagle Scout project - donations appreciated but not required!
+                  <br />The goal is to have fun playing basketball while supporting a great cause!
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/register">
                 <Button size="lg" className="bg-orange-500 hover:bg-orange-600">
-                  Register
+                  Register (Optional)
                 </Button>
               </Link>
               <Link to="/project">

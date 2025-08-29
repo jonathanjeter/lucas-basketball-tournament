@@ -1,19 +1,42 @@
 // Supabase client configuration for Basketball Tournament App
 import { createClient } from '@supabase/supabase-js'
+import { sendRegistrationEmails } from './email'
 
-// Get environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// =============================================================================
+// MULTI-ENVIRONMENT CONFIGURATION
+// =============================================================================
 
-// Validate environment variables
-if (!supabaseUrl || supabaseUrl === 'https://your-project-reference.supabase.co') {
-  console.error('❌ SUPABASE_URL not configured. Please update your .env.local file.')
-  console.error('📖 Follow the setup guide: SUPABASE_SETUP.md')
+// Determine which environment to use
+const isStaging = import.meta.env.VITE_STAGING_MODE === 'true'
+
+// Get environment variables based on staging mode
+const supabaseUrl = isStaging 
+  ? import.meta.env.VITE_STAGING_SUPABASE_URL
+  : import.meta.env.VITE_SUPABASE_URL
+
+const supabaseAnonKey = isStaging
+  ? import.meta.env.VITE_STAGING_SUPABASE_ANON_KEY
+  : import.meta.env.VITE_SUPABASE_ANON_KEY
+
+// Log which environment is being used
+if (isStaging) {
+  console.log('🧪 STAGING MODE: Using staging database')
+  console.log('📊 Safe to test - production data is protected')
+} else {
+  console.log('🚀 PRODUCTION MODE: Using live database')
+  console.warn('⚠️  CAUTION: You are connected to LIVE PRODUCTION DATA!')
 }
 
-if (!supabaseAnonKey || supabaseAnonKey.includes('your-actual-anon-key-here')) {
-  console.error('❌ SUPABASE_ANON_KEY not configured. Please update your .env.local file.')
-  console.error('📖 Follow the setup guide: SUPABASE_SETUP.md')
+// Validate environment variables
+const envPrefix = isStaging ? 'STAGING_' : ''
+if (!supabaseUrl || supabaseUrl.includes('your-staging-project-url-here') || supabaseUrl === 'https://your-project-reference.supabase.co') {
+  console.error(`❌ ${envPrefix}SUPABASE_URL not configured. Please update your .env.local file.`)
+  console.error('📖 Follow the setup guide: SUPABASE_SETUP.md or STAGING_SETUP.md')
+}
+
+if (!supabaseAnonKey || supabaseAnonKey.includes('your-staging-project-anon-key-here') || supabaseAnonKey.includes('your-actual-anon-key-here')) {
+  console.error(`❌ ${envPrefix}SUPABASE_ANON_KEY not configured. Please update your .env.local file.`)
+  console.error('📖 Follow the setup guide: SUPABASE_SETUP.md or STAGING_SETUP.md')
 }
 
 // Create Supabase client
@@ -25,10 +48,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'X-Client-Info': 'basketball-tournament-app'
+      'X-Client-Info': `basketball-tournament-app-${isStaging ? 'staging' : 'production'}`
     }
   }
 })
+
+// Export environment info for UI components
+export const environmentInfo = {
+  isStaging,
+  environment: isStaging ? 'staging' : 'production',
+  databaseUrl: supabaseUrl
+}
 
 // =============================================================================
 // DATABASE CONNECTION FUNCTIONS
@@ -233,7 +263,36 @@ export const registerTeam = async (teamData: any) => {
     }
 
     console.log('🎉 Registration completed successfully!');
-    return { data: team, error: null };
+    
+    // Send confirmation emails
+    console.log('📧 Sending confirmation emails...');
+    try {
+      const emailResult = await sendRegistrationEmails(teamData);
+      console.log('📧 Email results:', emailResult);
+      
+      // Return success with email status
+      return { 
+        data: team, 
+        error: null,
+        emailStatus: {
+          participantEmailSent: emailResult.participantSuccess,
+          adminEmailSent: emailResult.adminSuccess,
+          emailErrors: emailResult.errors
+        }
+      };
+    } catch (emailError) {
+      console.warn('📧 Email sending failed, but registration was successful:', emailError);
+      // Don't fail the registration if email fails
+      return { 
+        data: team, 
+        error: null,
+        emailStatus: {
+          participantEmailSent: false,
+          adminEmailSent: false,
+          emailErrors: ['Email sending failed']
+        }
+      };
+    }
   } catch (error) {
     console.error('❌ Error registering team:', error);
     return { data: null, error };

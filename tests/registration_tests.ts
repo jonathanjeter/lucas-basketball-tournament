@@ -109,7 +109,7 @@ test.describe('Registration Flow', () => {
     // Should redirect to payment page
     await expect(page).toHaveURL(/.*payment.*/);
     await expect(page.locator(`text=${testData.team.name}`)).toBeVisible();
-    await expect(page.locator('text=$60.00')).toBeVisible(); // 3 players × $20
+    await expect(page.locator('text=$30.00')).toBeVisible(); // 3 players × $10
   });
 
   test('should validate required fields', async ({ page }) => {

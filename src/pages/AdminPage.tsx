@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { AdminLogin } from '../components/AdminLogin';
 import ManualSponsorEntry from '../components/ManualSponsorEntry';
 import ManualVolunteerEntry from '../components/ManualVolunteerEntry';
+import { AdminEmailTesting } from '../components/AdminEmailTesting';
 import { getTeamsForAdmin, approveTeam, rejectTeam, updateTeamDivision, getSponsorsForAdmin, approveSponsor, rejectSponsor, schedulePickup, getVolunteersForAdmin, updateVolunteerStatus, exportVolunteers, updateTeamCheckIn, updateTeamPayment, getTournamentSettings, updateTournamentStatus, createBrackets, supabase, testConnection, testStorage } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -665,7 +666,7 @@ export const AdminPage: React.FC = () => {
                       "Next games begin in 5 minutes"
                     </button>
                     <button className="bg-white border border-blue-300 text-blue-900 px-4 py-2 rounded text-left min-h-[44px] hover:bg-blue-100">
-                      "Awards ceremony starting now"
+                      "Tournament concluding - thank you!"
                     </button>
                   </div>
                 </div>
@@ -721,6 +722,7 @@ export const AdminPage: React.FC = () => {
     { id: 'sponsors', name: 'Sponsors', icon: Building },
     { id: 'volunteers', name: 'Volunteers', icon: UserCheck },
     { id: 'manual-entry', name: 'Manual Entry', icon: Plus },
+    { id: 'email-testing', name: 'Email Testing', icon: Mail },
     { id: 'brackets', name: 'Brackets', icon: Trophy },
   ];
 
@@ -1547,6 +1549,17 @@ export const AdminPage: React.FC = () => {
               <ManualSponsorEntry onSponsorAdded={() => { fetchSponsors(); fetchRealStats(); }} />
               <ManualVolunteerEntry onVolunteerAdded={() => { fetchVolunteers(); fetchRealStats(); }} />
             </div>
+          </div>
+        )}
+
+        {activeTab === 'email-testing' && (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Email System Testing</h2>
+              <p className="text-gray-600">Test email templates and delivery in staging environment safely.</p>
+            </div>
+            
+            <AdminEmailTesting setActiveTab={setActiveTab} />
           </div>
         )}
 

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { testConnection, getFundraisingStats } from '../lib/supabase';
-import { CheckCircle, XCircle, AlertCircle, Loader, Database, BarChart3 } from 'lucide-react';
+import { testConnection, getFundraisingStats, environmentInfo } from '../lib/supabase';
+import { getEmailConfigStatus } from '../lib/email';
+import { EmailTest } from './EmailTest';
+import { CheckCircle, XCircle, AlertCircle, Loader, Database, BarChart3, Shield, TestTube, Mail } from 'lucide-react';
 
 export const DatabaseTest: React.FC = () => {
   const [isTestingConnection, setIsTestingConnection] = useState(false);
@@ -10,6 +12,7 @@ export const DatabaseTest: React.FC = () => {
   const [connectionResult, setConnectionResult] = useState<boolean | null>(null);
   const [statsResult, setStatsResult] = useState<any>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [showEmailTest, setShowEmailTest] = useState(false);
 
   const testDatabaseConnection = async () => {
     setIsTestingConnection(true);
@@ -62,9 +65,43 @@ export const DatabaseTest: React.FC = () => {
     import.meta.env.VITE_SUPABASE_ANON_KEY &&
     !import.meta.env.VITE_SUPABASE_URL.includes('your-project-reference') &&
     !import.meta.env.VITE_SUPABASE_ANON_KEY.includes('your-actual-anon-key');
+  
+  const emailConfig = getEmailConfigStatus();
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      {/* Environment Status Banner */}
+      <div className={`mb-6 p-4 rounded-lg border-2 ${
+        environmentInfo.isStaging 
+          ? 'bg-orange-50 border-orange-200 text-orange-900' 
+          : 'bg-red-50 border-red-200 text-red-900'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            {environmentInfo.isStaging ? (
+              <TestTube className="h-6 w-6" />
+            ) : (
+              <Shield className="h-6 w-6" />
+            )}
+            <div>
+              <h3 className="font-semibold text-lg">
+                {environmentInfo.isStaging ? '🧪 STAGING ENVIRONMENT' : '🚀 PRODUCTION ENVIRONMENT'}
+              </h3>
+              <p className="text-sm opacity-80">
+                {environmentInfo.isStaging 
+                  ? 'Safe testing environment - your production data is protected'
+                  : 'LIVE TOURNAMENT DATA - Be careful with changes!'
+                }
+              </p>
+            </div>
+          </div>
+          <div className="text-right text-sm font-mono">
+            <div className="opacity-60">Database:</div>
+            <div className="font-semibold">{environmentInfo.environment.toUpperCase()}</div>
+          </div>
+        </div>
+      </div>
+
       <Card className="p-6">
         <div className="flex items-center mb-6">
           <Database className="h-8 w-8 text-blue-500 mr-3" />
@@ -122,6 +159,106 @@ export const DatabaseTest: React.FC = () => {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Email Configuration Status */}
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+          <h3 className="text-lg font-semibold mb-3 flex items-center">
+            <Mail className="h-5 w-5 mr-2" />
+            Email Configuration Status
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between p-3 bg-white rounded border">
+              <span className="font-medium">EmailJS Service:</span>
+              <div className="flex items-center">
+                {emailConfig.serviceId ? (
+                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                )}
+                <span className={`text-sm font-mono ${
+                  emailConfig.serviceId ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {emailConfig.serviceId ? '✓ Configured' : '✗ Not configured'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-white rounded border">
+              <span className="font-medium">Public Key:</span>
+              <div className="flex items-center">
+                {emailConfig.publicKey ? (
+                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                )}
+                <span className={`text-sm font-mono ${
+                  emailConfig.publicKey ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {emailConfig.publicKey ? '✓ Configured' : '✗ Not configured'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-white rounded border">
+              <span className="font-medium">Participant Template:</span>
+              <div className="flex items-center">
+                {emailConfig.participantTemplate ? (
+                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                )}
+                <span className={`text-sm font-mono ${
+                  emailConfig.participantTemplate ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {emailConfig.participantTemplate ? '✓ Configured' : '✗ Not configured'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-white rounded border">
+              <span className="font-medium">Admin Template:</span>
+              <div className="flex items-center">
+                {emailConfig.adminTemplate ? (
+                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                )}
+                <span className={`text-sm font-mono ${
+                  emailConfig.adminTemplate ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {emailConfig.adminTemplate ? '✓ Configured' : '✗ Not configured'}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div className={`mt-4 p-3 rounded-lg ${
+            emailConfig.configured 
+              ? 'bg-green-100 border border-green-200' 
+              : 'bg-yellow-100 border border-yellow-200'
+          }`}>
+            <div className="flex items-center">
+              {emailConfig.configured ? (
+                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
+              )}
+              <span className={`font-medium ${
+                emailConfig.configured ? 'text-green-700' : 'text-yellow-700'
+              }`}>
+                {emailConfig.configured 
+                  ? '✅ Email confirmations enabled - participants will receive confirmation emails'
+                  : '⚠️ Email not configured - registrations will work but no confirmation emails will be sent'
+                }
+              </span>
+            </div>
+            {!emailConfig.configured && (
+              <p className="text-sm text-yellow-600 mt-2 ml-7">
+                Follow <code>EMAIL_SETUP.md</code> to configure EmailJS and enable confirmation emails.
+              </p>
+            )}
           </div>
         </div>
 
@@ -256,7 +393,26 @@ export const DatabaseTest: React.FC = () => {
             </ul>
           </div>
         )}
+
+        {/* Email Testing Section */}
+        <div className="mt-6">
+          <Button
+            onClick={() => setShowEmailTest(!showEmailTest)}
+            variant="outline"
+            className="w-full flex items-center justify-center space-x-2"
+          >
+            <Mail className="h-4 w-4" />
+            <span>{showEmailTest ? 'Hide Email Testing' : 'Test Email System'}</span>
+          </Button>
+        </div>
       </Card>
+
+      {/* Email Testing Component */}
+      {showEmailTest && (
+        <div className="mt-6">
+          <EmailTest />
+        </div>
+      )}
     </div>
   );
 };

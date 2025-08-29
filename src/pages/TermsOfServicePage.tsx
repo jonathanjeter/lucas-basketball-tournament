@@ -79,7 +79,7 @@ export const TermsOfServicePage: React.FC = () => {
               <div>
                 <h4 className="font-semibold text-green-900 mb-1">No One Excluded for Financial Reasons</h4>
                 <p className="text-green-800 text-sm">
-                  While we suggest a $20 per player donation to support our Eagle Scout project, 
+                  While we suggest a $10 per player donation to support our Eagle Scout project, 
                   financial hardship will never prevent participation.
                 </p>
               </div>
@@ -87,7 +87,7 @@ export const TermsOfServicePage: React.FC = () => {
           </div>
 
           <ul className="list-disc list-inside text-gray-700 mb-4 space-y-1">
-            <li>Suggested donation: $20 per player (optional)</li>
+            <li>Suggested donation: $10 per player (optional)</li>
             <li>All payments collected at tournament check-in</li>
             <li>Donations are voluntary and support cemetery restoration project</li>
             <li>No refunds for donations (all funds go to Eagle Scout project)</li>

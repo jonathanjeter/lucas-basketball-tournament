@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Users, User, Shield } from 'lucide-react';
+import { Plus, Minus, Users, User, Shield, Mail, MailCheck, MailX, Loader } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Card } from './ui/Card';
@@ -109,6 +109,19 @@ export const RegistrationForm: React.FC = () => {
   const [hasMinors, setHasMinors] = React.useState(false);
   const [customErrors, setCustomErrors] = React.useState<{[key: string]: string}>({});
   const [touchedFields, setTouchedFields] = React.useState<{[key: string]: boolean}>({});
+  const [emailProgress, setEmailProgress] = React.useState<{
+    sending: boolean;
+    participantSent: boolean;
+    adminSent: boolean;
+    attempts: { participant?: number; admin?: number };
+    errors: string[];
+  }>({
+    sending: false,
+    participantSent: false,
+    adminSent: false,
+    attempts: {},
+    errors: []
+  });
   const { executeRecaptcha } = useGoogleReCaptcha();
   
   const { control, register, handleSubmit, watch, setValue, formState: { errors, isValid } } = useForm<RegistrationFormData>({
@@ -254,61 +267,106 @@ export const RegistrationForm: React.FC = () => {
 
   // Check if form is valid for submission
   const isFormValid = () => {
-    console.log('Checking form validity with players:', players);
+    console.log('🔍 Checking form validity with players:', players);
     // Check all required fields are filled and valid
     for (let index = 0; index < players.length; index++) {
       const player = players[index];
       
       // Required fields check
-      console.log(`Player ${index}:`, player);
-      if (!player.name?.trim() || !player.birthdate || !player.emergencyContactName?.trim() || !player.emergencyContactPhone?.trim()) {
-        console.log(`Player ${index} failed required fields check`);
+      console.log(`🔍 Player ${index}:`, player);
+      
+      if (!player.name?.trim()) {
+        console.log(`❌ Player ${index} missing name`);
+        return false;
+      }
+      if (!player.birthdate) {
+        console.log(`❌ Player ${index} missing birthdate`);
+        return false;
+      }
+      if (!player.emergencyContactName?.trim()) {
+        console.log(`❌ Player ${index} missing emergency contact name`);
+        return false;
+      }
+      if (!player.emergencyContactPhone?.trim()) {
+        console.log(`❌ Player ${index} missing emergency contact phone`);
         return false;
       }
       
       // Email OR phone requirement
-      if (!validateEmailOrPhone(player.email || '', player.contactPhone || '').isValid) {
+      const emailPhoneValidation = validateEmailOrPhone(player.email || '', player.contactPhone || '');
+      console.log(`📧 Player ${index} email/phone validation:`, emailPhoneValidation);
+      if (!emailPhoneValidation.isValid) {
+        console.log(`❌ Player ${index} failed email/phone validation`);
         return false;
       }
       
-      // Valid format check
+      // Valid format check for emergency phone (always required)
       if (player.emergencyContactPhone && !validateUSPhone(player.emergencyContactPhone)) {
+        console.log(`❌ Player ${index} invalid emergency phone format:`, player.emergencyContactPhone);
         return false;
       }
+      
+      // Valid format check for optional fields
       if (player.email && !validateEmail(player.email)) {
+        console.log(`❌ Player ${index} invalid email format:`, player.email);
         return false;
       }
       if (player.contactPhone && !validateUSPhone(player.contactPhone)) {
+        console.log(`❌ Player ${index} invalid contact phone format:`, player.contactPhone);
         return false;
       }
     }
     
-    console.log('Form is valid, returning true');
+    console.log('✅ Form is valid, returning true');
     return true;
   };
 
   // Handle Continue to Donation button click
   const handleContinueToPayment = (e: React.FormEvent) => {
-    console.log('handleContinueToPayment called');
+    console.log('🔍 handleContinueToPayment called');
     e.preventDefault();
     
-    if (!isFormValid()) {
+    console.log('📊 Current players data:', players);
+    console.log('📋 Current custom errors:', customErrors);
+    
+    const validationResult = isFormValid();
+    console.log('✅ Form validation result:', validationResult);
+    
+    if (!validationResult) {
+      console.log('❌ Form validation failed, showing errors');
       // Run full validation to show all errors
       const allErrors: {[key: string]: string} = {};
       
       players.forEach((player, index) => {
         const prefix = `players.${index}`;
+        console.log(`🔍 Validating player ${index}:`, player);
         
-        if (!player.name?.trim()) allErrors[`${prefix}.name`] = 'Player name is required';
-        if (!player.birthdate) allErrors[`${prefix}.birthdate`] = 'Birthdate is required';
-        if (!player.emergencyContactName?.trim()) allErrors[`${prefix}.emergencyContactName`] = 'Emergency contact required';
-        if (!player.emergencyContactPhone?.trim()) allErrors[`${prefix}.emergencyContactPhone`] = 'Emergency phone required';
+        if (!player.name?.trim()) {
+          allErrors[`${prefix}.name`] = 'Player name is required';
+          console.log(`❌ Player ${index} missing name`);
+        }
+        if (!player.birthdate) {
+          allErrors[`${prefix}.birthdate`] = 'Birthdate is required';
+          console.log(`❌ Player ${index} missing birthdate`);
+        }
+        if (!player.emergencyContactName?.trim()) {
+          allErrors[`${prefix}.emergencyContactName`] = 'Emergency contact required';
+          console.log(`❌ Player ${index} missing emergency contact name`);
+        }
+        if (!player.emergencyContactPhone?.trim()) {
+          allErrors[`${prefix}.emergencyContactPhone`] = 'Emergency phone required';
+          console.log(`❌ Player ${index} missing emergency phone`);
+        }
         
-        if (!validateEmailOrPhone(player.email || '', player.contactPhone || '').isValid) {
+        const emailPhoneValidation = validateEmailOrPhone(player.email || '', player.contactPhone || '');
+        console.log(`📧 Player ${index} email/phone validation:`, emailPhoneValidation);
+        if (!emailPhoneValidation.isValid) {
           allErrors[`${prefix}.contact`] = 'Either email or phone is required';
+          console.log(`❌ Player ${index} failed email/phone validation`);
         }
       });
       
+      console.log('❌ All validation errors:', allErrors);
       setCustomErrors(allErrors);
       
       // Scroll to first error for better UX
@@ -323,6 +381,7 @@ export const RegistrationForm: React.FC = () => {
       return;
     }
     
+    console.log('✅ Validation passed, proceeding to step 3');
     // Clear any previous custom errors and proceed
     setCustomErrors({});
     setStep(3);
@@ -348,7 +407,7 @@ export const RegistrationForm: React.FC = () => {
       // Set donation amount to 0 since payment happens at tournament
       let donationAmount = 0;
       if (data.paymentOption === 'suggested') {
-        donationAmount = data.players.length * 20;
+        donationAmount = data.players.length * 10;
       } else if (data.paymentOption === 'different') {
         donationAmount = data.customAmount || 0;
       }
@@ -362,16 +421,96 @@ export const RegistrationForm: React.FC = () => {
       };
       
       console.log('Final submission data:', submissionData);
+      
+      // Show email sending progress
+      setEmailProgress(prev => ({ ...prev, sending: true }));
+      
       const result = await registerTeam(submissionData);
       
       // Generate registration ID for confirmation
       const registrationId = `REG-${Date.now().toString().slice(-6)}`;
       
-      toast.success(`Thank you! Your registration has been submitted for review. Registration ID: ${registrationId}. You'll receive updates on your application status.`);
+      // Handle detailed email status feedback
+      if (result?.emailStatus) {
+        const { participantEmailSent, adminEmailSent, emailErrors, details } = result.emailStatus;
+        
+        // Update email progress state
+        setEmailProgress({
+          sending: false,
+          participantSent: participantEmailSent,
+          adminSent: adminEmailSent,
+          attempts: {
+            participant: details?.participantAttempts,
+            admin: details?.adminAttempts
+          },
+          errors: emailErrors || []
+        });
+        
+        // Create detailed success message
+        let emailStatusMessage = '';
+        let toastIcon = '✅';
+        
+        if (participantEmailSent && adminEmailSent) {
+          emailStatusMessage = ' 📧 Confirmation emails sent successfully!';
+          toastIcon = '✅';
+        } else if (participantEmailSent && !adminEmailSent) {
+          emailStatusMessage = ' 📧 Confirmation email sent! (Admin notification had issues)';
+          toastIcon = '✅';
+        } else if (!participantEmailSent && adminEmailSent) {
+          emailStatusMessage = ' ⚠️ Registration successful, but confirmation email failed to send.';
+          toastIcon = '⚠️';
+        } else {
+          emailStatusMessage = ' ⚠️ Registration successful, but email notifications failed.';
+          toastIcon = '⚠️';
+        }
+        
+        toast.success(`Thank you! Your registration has been submitted for admin approval. Registration ID: ${registrationId}.${emailStatusMessage}`, {
+          duration: 8000,
+          icon: toastIcon
+        });
+        
+        // Show detailed follow-up messages
+        if (!participantEmailSent) {
+          setTimeout(() => {
+            toast('📧 Confirmation email failed to send. Please check your spam folder or contact us directly for confirmation.', {
+              icon: '📧',
+              duration: 6000
+            });
+          }, 2000);
+          
+          if (details?.participantError) {
+            setTimeout(() => {
+              toast.error(`Email error details: ${details.participantError}`, {
+                duration: 4000
+              });
+            }, 4000);
+          }
+        }
+        
+        // Show success details for admin
+        if (adminEmailSent && details?.adminAttempts) {
+          console.log(`✅ Admin notification sent after ${details.adminAttempts} attempts`);
+        } else if (!adminEmailSent && details?.adminError) {
+          console.warn(`❌ Admin notification failed: ${details.adminError}`);
+        }
+        
+        // Show approval reminder
+        setTimeout(() => {
+          toast('📋 Your registration is pending admin approval. You\'ll receive a follow-up email once approved.', {
+            icon: '⏳',
+            duration: 6000
+          });
+        }, 6000);
+        
+      } else {
+        // Fallback message if no email status
+        setEmailProgress(prev => ({ ...prev, sending: false }));
+        toast.success(`Thank you! Your registration has been submitted for admin approval. Registration ID: ${registrationId}.`);
+      }
       
       setTimeout(() => {
         window.location.reload();
-      }, 5000);
+      }, 10000);
       
     } catch (error) {
       console.error('Registration error:', error);
@@ -386,12 +525,28 @@ export const RegistrationForm: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
+      {/* Walk-in Banner */}
+      <div className="mb-8">
+        <Card className="p-6 bg-gradient-to-r from-green-500 to-green-600 text-white text-center mb-6">
+          <div className="text-3xl mb-4">🏀 WALK-INS WELCOME TOMORROW! 🏀</div>
+          <div className="text-xl mb-2">No Pre-Registration Required</div>
+          <div className="text-lg">Show up Saturday, August 30th at 7:30 AM ready to play</div>
+          <div className="text-sm mt-3 opacity-90">
+            <div className="mb-2">Registration below is optional - just for planning purposes</div>
+            <div className="bg-white/20 rounded-lg px-4 py-2 inline-block text-xs">
+              💚 $10 suggested donation supports the Eagle Scout project - donations appreciated but not required!
+              <br />The goal is for everyone to have fun playing basketball while supporting a great cause!
+            </div>
+          </div>
+        </Card>
+      </div>
+
       <div className="text-center mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-          Tournament Registration
+          Tournament Registration (Optional)
         </h1>
         <p className="text-xl text-gray-600">
-          Register for the 3-on-3 Basketball Tournament and support our Eagle Scout project!
+          Pre-register to help us plan, or just show up tomorrow morning at 7:30 AM!
         </p>
       </div>
 
@@ -810,8 +965,9 @@ export const RegistrationForm: React.FC = () => {
                     💚 No One Excluded for Financial Reasons
                   </h3>
                   <p className="text-green-800">
-                    Our Eagle Scout project welcomes everyone! The $20 suggested donation helps fund our cemetery restoration, 
-                    but financial hardship should never prevent participation. Choose the option that works best for you.
+                    Our Eagle Scout project welcomes everyone! The $10 suggested donation helps fund our cemetery restoration, 
+                    but <strong>donations are appreciated but not required</strong>. The goal is for everyone to have fun playing 
+                    basketball while supporting a great cause. Choose the option that works best for you - everyone is welcome to play!
                   </p>
                 </div>
               </div>
@@ -844,10 +1000,10 @@ export const RegistrationForm: React.FC = () => {
                       <div className="flex justify-between items-center">
                         <div>
                           <h4 className="font-semibold text-green-900">Pay Suggested Amount</h4>
-                          <p className="text-sm text-green-700">$20 per player at tournament (${players.length * 20} total)</p>
+                          <p className="text-sm text-green-700">$10 per player at tournament (${players.length * 10} total)</p>
                         </div>
                         <div className="text-2xl font-bold text-green-600">
-                          ${players.length * 20}
+                          ${players.length * 10}
                         </div>
                       </div>
                     </div>
@@ -1023,7 +1179,7 @@ export const RegistrationForm: React.FC = () => {
                 </Button>
                 <Button 
                   type="submit" 
-                  loading={loading}
+                  loading={loading || emailProgress.sending}
                   className="flex-1"
                   onClick={(e) => {
                     console.log('🎯 Submit Registration button clicked');
@@ -1031,12 +1187,93 @@ export const RegistrationForm: React.FC = () => {
                     // Don't prevent default - let form submission proceed
                   }}
                 >
-                  Submit Registration for Review
+                  {loading ? 'Submitting Registration...' : 
+                   emailProgress.sending ? 'Sending Confirmation Emails...' : 
+                   'Submit Registration for Review'}
                 </Button>
               </div>
             </motion.div>
           )}
         </form>
+        
+        {/* Email Progress Indicator */}
+        {(emailProgress.sending || emailProgress.participantSent || emailProgress.adminSent) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6"
+          >
+            <Card className="p-4 bg-blue-50 border-blue-200">
+              <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
+                <Mail className="h-5 w-5 mr-2" />
+                Email Confirmation Status
+              </h3>
+              
+              <div className="space-y-2">
+                {/* Participant Email Status */}
+                <div className="flex items-center justify-between p-2 bg-white rounded border">
+                  <span className="text-sm font-medium">Participant Confirmation</span>
+                  <div className="flex items-center space-x-2">
+                    {emailProgress.sending ? (
+                      <Loader className="h-4 w-4 animate-spin text-blue-500" />
+                    ) : emailProgress.participantSent ? (
+                      <MailCheck className="h-4 w-4 text-green-500" />
+                    ) : emailProgress.attempts.participant ? (
+                      <MailX className="h-4 w-4 text-red-500" />
+                    ) : null}
+                    
+                    <span className="text-xs text-gray-500">
+                      {emailProgress.sending ? 'Sending...' :
+                       emailProgress.participantSent ? 'Sent successfully' :
+                       emailProgress.attempts.participant ? `Failed after ${emailProgress.attempts.participant} attempts` :
+                       'Pending'}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Admin Email Status */}
+                <div className="flex items-center justify-between p-2 bg-white rounded border">
+                  <span className="text-sm font-medium">Admin Notification</span>
+                  <div className="flex items-center space-x-2">
+                    {emailProgress.sending ? (
+                      <Loader className="h-4 w-4 animate-spin text-blue-500" />
+                    ) : emailProgress.adminSent ? (
+                      <MailCheck className="h-4 w-4 text-green-500" />
+                    ) : emailProgress.attempts.admin ? (
+                      <MailX className="h-4 w-4 text-red-500" />
+                    ) : null}
+                    
+                    <span className="text-xs text-gray-500">
+                      {emailProgress.sending ? 'Sending...' :
+                       emailProgress.adminSent ? 'Sent successfully' :
+                       emailProgress.attempts.admin ? `Failed after ${emailProgress.attempts.admin} attempts` :
+                       'Pending'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Show errors if any */}
+              {emailProgress.errors.length > 0 && (
+                <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
+                  <p className="text-xs text-red-700 font-medium mb-1">Email Issues:</p>
+                  {emailProgress.errors.map((error, index) => (
+                    <p key={index} className="text-xs text-red-600">{error}</p>
+                  ))}
+                </div>
+              )}
+              
+              {/* Success message */}
+              {emailProgress.participantSent && emailProgress.adminSent && (
+                <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded">
+                  <p className="text-xs text-green-700 font-medium">
+                    ✅ All confirmation emails sent successfully!
+                  </p>
+                </div>
+              )}
+            </Card>
+          </motion.div>
+        )}
       </Card>
     </div>
   );

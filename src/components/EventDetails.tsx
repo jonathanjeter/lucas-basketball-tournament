@@ -37,7 +37,7 @@ export const EventDetails: React.FC = () => {
     {
       icon: Clock,
       title: 'Tournament Schedule',
-      description: 'Check-in & Registration: 7:30 AM\nTournament play begins: 8:00 AM\nWinners announced: 12:30 PM'
+      description: 'Registration/Team Assignment: 7:30-8:00 AM\nTournament Play: 8:00 AM - 12:00 PM (Noon)\n🏀 Walk-ins Welcome - No Pre-registration Required!'
     },
     {
       icon: Users,
@@ -67,6 +67,28 @@ export const EventDetails: React.FC = () => {
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Everything you need to know about the tournament format, schedule, and what to expect on game day.
           </p>
+        </motion.div>
+
+        {/* Walk-in Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mb-12"
+        >
+          <Card className="p-6 bg-gradient-to-r from-green-500 to-green-600 text-white text-center">
+            <div className="text-3xl mb-4">🏀 WALK-INS WELCOME! 🏀</div>
+            <div className="text-xl mb-2">No Registration Required!</div>
+            <div className="text-lg">Just show up Saturday, August 30th at 7:30 AM ready to play.</div>
+            <div className="text-sm mt-3 opacity-90">
+              <div className="mb-1">Bring $10 suggested donation per player • Basketball shoes • Water bottle</div>
+              <div className="text-xs bg-white/20 rounded-lg px-4 py-2 inline-block">
+                💚 Entry fee supports the Eagle Scout project - donations appreciated but not required!
+                <br />Come have fun playing basketball while supporting a great cause!
+              </div>
+            </div>
+          </Card>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -176,7 +198,7 @@ export const EventDetails: React.FC = () => {
                 href="/register"
                 className="bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors"
               >
-                Register for Tournament
+                Register (Optional)
               </a>
               <a 
                 href="/project"

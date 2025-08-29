@@ -123,8 +123,8 @@ export const Footer: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-300">Tournament Location:</p>
                   <p className="text-sm text-white">
-                    Finley Junior High School<br />
-                    Waxahachie, TX 75165
+                    Finley Junior High School Gym<br />
+                    2401 Brown St, Waxahachie, TX 75165
                   </p>
                 </div>
               </div>

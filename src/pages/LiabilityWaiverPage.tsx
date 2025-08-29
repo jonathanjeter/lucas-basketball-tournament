@@ -45,10 +45,10 @@ export const LiabilityWaiverPage: React.FC = () => {
               <div>
                 <p><strong>Event:</strong> 3-on-3 Basketball Tournament</p>
                 <p><strong>Date:</strong> Saturday, August 30, 2025</p>
-                <p><strong>Time:</strong> 8:00 AM - 12:30 PM</p>
+                <p><strong>Time:</strong> 8:00 AM - 12:00 PM</p>
               </div>
               <div>
-                <p><strong>Location:</strong> Finley Junior High School</p>
+                <p><strong>Location:</strong> Finley Junior High School Gym</p>
                 <p><strong>Address:</strong> 2401 Brown St, Waxahachie, TX 75165</p>
                 <p><strong>Organizer:</strong> BSA Troop 232 Eagle Scout Project</p>
               </div>
