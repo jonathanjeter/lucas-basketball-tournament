@@ -3,11 +3,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MessageSquare, Users, Gift, Heart } from 'lucide-react';
+import { Mail, Phone, MessageSquare, Users, Gift, Heart, Building } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { addContactInquiry } from '../lib/supabase';
+import { addContactInquiry, addSponsor, uploadSponsorLogo } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 type InquiryType = 'general' | 'tournament' | 'sponsorship' | 'volunteering';
@@ -80,6 +80,7 @@ type FormData = z.infer<typeof generalSchema> |
 export const ContactPage: React.FC = () => {
   const [activeTab, setActiveTab] = React.useState<InquiryType>('general');
   const [loading, setLoading] = React.useState(false);
+  const [logoFile, setLogoFile] = React.useState<File | null>(null);
 
   const getSchema = (type: InquiryType) => {
     switch (type) {
@@ -102,30 +103,77 @@ export const ContactPage: React.FC = () => {
     setLoading(true);
     
     try {
-      // Map form data to database format
-      const inquiryData = {
-        inquiryType: activeTab,
-        name: data.name,
-        email: data.email,
-        phone: (data as any).phone || null,
-        organization: (data as any).company || null,
-        message: (data as any).message || (data as any).questions || 'No message provided',
-        sponsorshipType: activeTab === 'sponsorship' ? (data as any).donationType : null,
-        volunteerExperience: activeTab === 'volunteering' ? (data as any).skills : null
-      };
+      let result;
+      
+      if (activeTab === 'sponsorship') {
+        // Handle sponsorship registration - add to sponsors table
+        console.log('🔍 [ContactPage] Raw form data:', data)
+        
+        let logoUrl = null;
+        
+        // Upload logo if provided
+        if (logoFile) {
+          console.log('📤 [ContactPage] Uploading sponsor logo...')
+          const uploadResult = await uploadSponsorLogo(logoFile, data.name);
+          if (uploadResult.error) {
+            toast.error(`Logo upload failed: ${uploadResult.error}`);
+            return; // Stop submission if logo upload fails
+          }
+          logoUrl = uploadResult.logoUrl;
+          console.log('✅ [ContactPage] Logo uploaded:', logoUrl)
+        }
+        
+        const sponsorData = {
+          sponsorName: data.name,
+          contactName: data.name,
+          email: data.email,
+          phone: (data as any).phone || null,
+          company: (data as any).company || null,
+          donationType: (data as any).donationType,
+          donationAmount: (data as any).donationType === 'monetary' ? (data as any).amount : null,
+          itemDescription: (data as any).donationType === 'items' ? (data as any).itemDescription : null,
+          website: (data as any).website || null,
+          questions: (data as any).questions || null,
+          logoUrl: logoUrl,
+          approved: false // Requires admin approval
+        };
+        
+        console.log('📤 [ContactPage] Sending sponsor data:', sponsorData)
+        result = await addSponsor(sponsorData);
+        console.log('📥 [ContactPage] addSponsor result:', result)
+      } else {
+        // Handle other inquiries - add to contact inquiries
+        const inquiryData = {
+          inquiryType: activeTab,
+          name: data.name,
+          email: data.email,
+          phone: (data as any).phone || null,
+          organization: (data as any).company || null,
+          message: (data as any).message || (data as any).questions || 'No message provided',
+          sponsorshipType: null,
+          volunteerExperience: activeTab === 'volunteering' ? (data as any).skills : null
+        };
 
-      const result = await addContactInquiry(inquiryData);
+        result = await addContactInquiry(inquiryData);
+      }
       
-      // Generate confirmation message with inquiry ID
-      const confirmationMessages = {
-        general: `Thank you for contacting us! Your inquiry ID is ${result.data.inquiryId}. We'll respond within 1-2 business days.`,
-        tournament: `Thank you for your tournament inquiry! Your inquiry ID is ${result.data.inquiryId}. We'll contact you with registration details.`,
-        sponsorship: `Thank you for your sponsorship interest! Your inquiry ID is ${result.data.inquiryId}. We'll review your information and contact you within 2 business days.`,
-        volunteering: `Thank you for volunteering! Your inquiry ID is ${result.data.inquiryId}. We'll contact you with project details and schedule information.`
-      };
+      // Generate confirmation message
+      let confirmationMessage;
+      if (activeTab === 'sponsorship') {
+        confirmationMessage = `Thank you for your sponsorship registration! Your application has been submitted and is awaiting approval. We'll contact you within 2 business days with next steps.`;
+      } else {
+        const inquiryId = result.data.inquiryId;
+        const confirmationMessages = {
+          general: `Thank you for contacting us! Your inquiry ID is ${inquiryId}. We'll respond within 1-2 business days.`,
+          tournament: `Thank you for your tournament inquiry! Your inquiry ID is ${inquiryId}. We'll contact you with registration details.`,
+          volunteering: `Thank you for volunteering! Your inquiry ID is ${inquiryId}. We'll contact you with project details and schedule information.`
+        };
+        confirmationMessage = confirmationMessages[activeTab];
+      }
       
-      toast.success(confirmationMessages[activeTab]);
+      toast.success(confirmationMessage);
       reset();
+      setLogoFile(null); // Clear uploaded logo
     } catch (error: any) {
       console.error('Contact form error:', error);
       toast.error(error.message || 'Failed to send message. Please try again or contact us directly.');
@@ -399,6 +447,70 @@ export const ContactPage: React.FC = () => {
                 error={errors.website?.message}
                 placeholder="https://yourwebsite.com"
               />
+              
+              {/* Logo Upload Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Company Logo (Optional)
+                </label>
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      {logoFile ? (
+                        <>
+                          <div className="flex items-center space-x-2 text-green-600">
+                            <Gift className="h-5 w-5" />
+                            <span className="text-sm font-medium">{logoFile.name}</span>
+                          </div>
+                          <p className="text-xs text-gray-500">Click to change logo</p>
+                        </>
+                      ) : (
+                        <>
+                          <Building className="h-8 w-8 text-gray-400 mb-2" />
+                          <p className="mb-2 text-sm text-gray-500">
+                            <span className="font-semibold">Click to upload logo</span>
+                          </p>
+                          <p className="text-xs text-gray-500">PNG, JPG, or WebP (MAX. 5MB)</p>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // Validate file type and size
+                          const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                          if (!validTypes.includes(file.type)) {
+                            toast.error('Please upload a JPEG, PNG, or WebP image.');
+                            return;
+                          }
+                          if (file.size > 5 * 1024 * 1024) {
+                            toast.error('File size too large. Please upload an image smaller than 5MB.');
+                            return;
+                          }
+                          setLogoFile(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  Upload your company logo to be displayed on the tournament homepage when your sponsorship is approved ($40+ donations).
+                </p>
+                {logoFile && (
+                  <button
+                    type="button"
+                    onClick={() => setLogoFile(null)}
+                    className="mt-2 text-sm text-red-600 hover:text-red-800"
+                  >
+                    Remove logo
+                  </button>
+                )}
+              </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Additional Questions

@@ -65,7 +65,7 @@ export const AdminPage: React.FC = () => {
       // Get sponsors
       const { data: sponsors, error: sponsorsError } = await supabase
         .from('sponsors')
-        .select('donation_amount, estimated_value, approved');
+        .select('donation_amount, item_description, approved');
         
       // Get volunteers
       const { data: volunteers, error: volunteersError } = await supabase
@@ -87,7 +87,7 @@ export const AdminPage: React.FC = () => {
         if (sponsors && !sponsorsError) {
           sponsorFunds = sponsors
             .filter(s => s.approved === true)
-            .reduce((sum, s) => sum + (s.donation_amount || s.estimated_value || 0), 0);
+            .reduce((sum, s) => sum + (s.donation_amount || 0), 0);
         }
         
         const totalFundsRaised = teamFunds + sponsorFunds;
@@ -1183,7 +1183,7 @@ export const AdminPage: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-semibold text-gray-900 text-lg">
-                              {sponsor.name}
+                              {sponsor.sponsor_name}
                             </h3>
                             {sponsor.website && (
                               <a 
@@ -1240,7 +1240,7 @@ export const AdminPage: React.FC = () => {
                           <div className="flex justify-center">
                             <img
                               src={sponsor.logo_url}
-                              alt={`${sponsor.name} logo`}
+                              alt={`${sponsor.sponsor_name} logo`}
                               className="max-h-16 max-w-32 object-contain rounded"
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none';

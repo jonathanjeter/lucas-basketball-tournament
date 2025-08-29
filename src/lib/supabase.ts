@@ -390,28 +390,96 @@ export const getSponsorsForAdmin = async () => {
 // Add a new sponsor
 export const addSponsor = async (sponsorData: any) => {
   try {
+    console.log('🔍 [addSponsor] Input data:', sponsorData)
+    
+    // Handle both field name formats for backward compatibility
+    const sponsorName = sponsorData.sponsorName || sponsorData.name
+    const contactName = sponsorData.contactName || sponsorData.name
+    
+    // Map donation type correctly - this is the CONTRIBUTION TYPE (monetary/items/services)
+    // NOT the sponsor type (business/individual)
+    let donationType = sponsorData.donationType
+    if (!donationType && sponsorData.sponsor_type) {
+      // If we get sponsor_type instead of donationType, we have a mapping error
+      console.warn('⚠️ [addSponsor] Received sponsor_type instead of donationType. This suggests form field mapping issue.')
+      // Don't use sponsor_type as donationType - they are different concepts
+      donationType = null
+    }
+    
+    // Validate donation_type against database constraint
+    const validDonationTypes = ['monetary', 'items', 'services']
+    if (donationType && !validDonationTypes.includes(donationType)) {
+      const error = new Error(`Invalid donation_type: ${donationType}. Must be one of: ${validDonationTypes.join(', ')}`)
+      console.error('❌ [addSponsor] Invalid donation_type:', error.message)
+      return { data: null, error }
+    }
+    
+    // Validate required fields
+    if (!sponsorName || !sponsorData.email || !donationType) {
+      const error = new Error('Missing required fields: name/sponsorName, email, or donationType (monetary/items/services)')
+      console.error('❌ [addSponsor] Validation error:', error.message)
+      console.error('❌ [addSponsor] Received fields:', {
+        sponsorName: sponsorName,
+        email: sponsorData.email,
+        donationType: donationType,
+        rawSponsorType: sponsorData.sponsor_type,
+        rawDonationType: sponsorData.donationType
+      })
+      return { data: null, error }
+    }
+
+    // Handle sponsor type (business/individual) - inferred from company field
+    // If sponsor_type is provided, use it to guide field mapping
+    let company = sponsorData.company;
+    if (sponsorData.sponsor_type === 'individual') {
+      // For individuals, clear company field even if accidentally provided
+      company = null;
+    } else if (sponsorData.sponsor_type === 'business' && !company) {
+      // For businesses without company name, use sponsor name as company
+      company = sponsorName;
+    }
+
+    // Prepare database insert object with correct field mapping
+    const insertData = {
+      sponsor_name: sponsorName,
+      contact_name: contactName,
+      email: sponsorData.email,
+      phone: sponsorData.phone,
+      company: company,
+      donation_type: donationType, // This is the CONTRIBUTION type (monetary/items/services)
+      donation_amount: sponsorData.donationAmount || sponsorData.amount,
+      item_description: sponsorData.itemDescription || sponsorData.item_description,
+      website: sponsorData.website,
+      sponsor_level: sponsorData.sponsorLevel || sponsorData.sponsor_level || 'bronze',
+      display_on_website: sponsorData.displayOnWebsite !== false,
+      approved: sponsorData.approved !== undefined ? sponsorData.approved : false,
+      questions: sponsorData.questions,
+      logo_url: sponsorData.logoUrl || sponsorData.logo_url || null
+    }
+    
+    console.log('📝 [addSponsor] Database insert data:', insertData)
+    console.log('📝 [addSponsor] Field mapping summary:', {
+      'sponsor_type (business/individual)': sponsorData.sponsor_type,
+      'donationType (contribution type)': donationType,
+      'company field': company,
+      'inferred sponsor category': company ? 'business' : 'individual'
+    })
+
     const { data, error } = await supabase
       .from('sponsors')
-      .insert({
-        sponsor_name: sponsorData.sponsorName,
-        contact_name: sponsorData.contactName,
-        email: sponsorData.email,
-        phone: sponsorData.phone,
-        company: sponsorData.company,
-        donation_type: sponsorData.donationType,
-        donation_amount: sponsorData.donationAmount,
-        item_description: sponsorData.itemDescription,
-        website: sponsorData.website,
-        sponsor_level: sponsorData.sponsorLevel || 'bronze',
-        display_on_website: sponsorData.displayOnWebsite !== false,
-        questions: sponsorData.questions
-      })
+      .insert(insertData)
       .select()
       .single()
 
-    return { data, error }
+    if (error) {
+      console.error('❌ [addSponsor] Database error:', error)
+      return { data: null, error }
+    }
+
+    console.log('✅ [addSponsor] Success:', data)
+    return { data, error: null }
   } catch (error) {
-    console.error('Error adding sponsor:', error)
+    console.error('❌ [addSponsor] Unexpected error:', error)
     return { data: null, error }
   }
 }
@@ -444,6 +512,81 @@ export const rejectSponsor = async (sponsorId: string) => {
   } catch (error) {
     console.error('Error rejecting sponsor:', error)
     return { data: null, error }
+  }
+}
+
+// Get approved sponsors for homepage display
+export const getApprovedSponsors = async () => {
+  try {
+    console.log('🔍 [getApprovedSponsors] Fetching approved sponsors...')
+    
+    const { data, error } = await supabase
+      .from('sponsors')
+      .select('id, sponsor_name, website, logo_url, donation_amount, sponsor_level, company')
+      .eq('approved', true)
+      .eq('display_on_website', true)
+      .order('donation_amount', { ascending: false, nullsFirst: false })
+    
+    if (error) {
+      console.error('❌ [getApprovedSponsors] Database error:', error)
+      return { data: [], error }
+    }
+
+    console.log('✅ [getApprovedSponsors] Found sponsors:', data?.length || 0)
+    return { data: data || [], error: null }
+  } catch (error) {
+    console.error('❌ [getApprovedSponsors] Unexpected error:', error)
+    return { data: [], error }
+  }
+}
+
+// Upload sponsor logo to Supabase storage
+export const uploadSponsorLogo = async (file: File, sponsorName: string) => {
+  try {
+    console.log('📤 [uploadSponsorLogo] Uploading logo for:', sponsorName)
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      throw new Error('Invalid file type. Please upload a JPEG, PNG, or WebP image.');
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      throw new Error('File size too large. Please upload an image smaller than 5MB.');
+    }
+
+    // Generate unique filename
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${sponsorName.replace(/[^a-zA-Z0-9]/g, '_')}.${fileExt}`;
+    const filePath = `sponsor-logos/${fileName}`;
+
+    console.log('📂 [uploadSponsorLogo] Uploading to path:', filePath)
+
+    // Upload to Supabase storage
+    const { data, error } = await supabase.storage
+      .from('tournament-files')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('❌ [uploadSponsorLogo] Upload error:', error)
+      throw new Error(`Upload failed: ${error.message}`);
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('tournament-files')
+      .getPublicUrl(filePath);
+
+    console.log('✅ [uploadSponsorLogo] Upload successful:', publicUrl)
+    return { logoUrl: publicUrl, error: null };
+  } catch (error) {
+    console.error('❌ [uploadSponsorLogo] Unexpected error:', error)
+    return { logoUrl: null, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 

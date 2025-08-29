@@ -38,29 +38,50 @@ export const SponsorsPage: React.FC = () => {
 
   // Check if logo upload should be shown
   React.useEffect(() => {
-    const amount = donationType === 'monetary' ? parseInt(donationAmount) : parseInt(itemValue);
-    setShowLogoUpload(amount >= 40);
+    const amount = donationType === 'monetary' 
+      ? parseFloat(donationAmount) || 0 
+      : parseFloat(itemValue) || 0;
+    const shouldShow = amount >= 40;
+    console.log('🔍 [showLogoUpload useEffect]', {
+      donationType,
+      donationAmount,
+      itemValue,
+      calculatedAmount: amount,
+      shouldShowUpload: shouldShow,
+      currentlyShowing: showLogoUpload
+    });
+    setShowLogoUpload(shouldShow);
   }, [donationType, donationAmount, itemValue]);
 
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Prevent any event bubbling that might interfere with form
+    event.stopPropagation();
+    
     const file = event.target.files?.[0];
+    console.log('🔍 [handleFileChange] File selected:', file?.name || 'none')
+    console.log('🔍 [handleFileChange] Current donationAmount before:', donationAmount)
+    
     if (file) {
       // Validate file type
       if (!file.type.match(/image\/(jpeg|jpg|png|gif)/)) {
         toast.error('Please select a valid image file (JPG, PNG, GIF)');
+        event.target.value = ''; // Clear the input
         return;
       }
       
       // Validate file size (2MB max)
       if (file.size > 2 * 1024 * 1024) {
         toast.error('File size must be less than 2MB');
+        event.target.value = ''; // Clear the input
         return;
       }
       
       setSelectedFile(file);
       toast.success(`Selected: ${file.name}`);
     }
+    
+    console.log('🔍 [handleFileChange] Current donationAmount after:', donationAmount)
   };
 
   const handleSponsorSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -69,7 +90,7 @@ export const SponsorsPage: React.FC = () => {
     setValidationErrors({});
     
     const formData = new FormData(e.currentTarget);
-    const donationType = formData.get('donationType') as string;
+    const formDonationType = formData.get('donationType') as string;
     const email = formData.get('email') as string;
     const phone = formData.get('phone') as string;
     
@@ -84,19 +105,28 @@ export const SponsorsPage: React.FC = () => {
       }
     }
     
+    console.log('🔍 [SponsorsPage] Form data capture:')
+    console.log('  - donationType from FormData:', formDonationType)
+    console.log('  - donationType from state:', donationType)
+    console.log('  - sponsorType from state:', sponsorType)
+    console.log('  - donationAmount:', formData.get('donationAmount'))
+    console.log('  - selectedFile:', selectedFile?.name || 'none')
+    
     const sponsorData = {
       name: sponsorType === 'business' ? formData.get('companyName') as string : formData.get('individualName') as string,
       contact_name: sponsorType === 'business' ? formData.get('contactName') as string : null,
       email: email || null,
       phone: phone || null,
       sponsor_type: sponsorType,
-      donation_type: donationType,
-      donation_amount: donationType === 'monetary' ? parseFloat(formData.get('donationAmount') as string) : null,
-      item_description: donationType === 'item' ? formData.get('itemDescription') as string : null,
-      estimated_value: donationType === 'item' ? parseFloat(formData.get('estimatedValue') as string) : null,
+      donationType: formDonationType || donationType, // Prefer FormData value, fallback to state
+      donationAmount: donationType === 'monetary' ? parseFloat(formData.get('donationAmount') as string) || 0 : null,
+      itemDescription: donationType === 'item' ? formData.get('itemDescription') as string : null,
+      // Remove estimated_value as it doesn't exist in database schema
       website: formData.get('website') as string || null,
-      logo_file: selectedFile,
+      logoFile: selectedFile, // This will be handled by the upload function
     };
+    
+    console.log('📤 [SponsorsPage] Sending sponsor data:', sponsorData)
 
     try {
       await addSponsor(sponsorData);
@@ -360,7 +390,10 @@ export const SponsorsPage: React.FC = () => {
                   min="1"
                   className="pl-8"
                   value={donationAmount}
-                  onChange={(e) => setDonationAmount(e.target.value)}
+                  onChange={(e) => {
+                    console.log('💰 [donationAmount] Changed from', donationAmount, 'to', e.target.value)
+                    setDonationAmount(e.target.value)
+                  }}
                   required
                 />
               </div>
