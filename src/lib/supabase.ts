@@ -394,6 +394,20 @@ export const addSponsor = async (sponsorData: any) => {
     
     // Handle both field name formats for backward compatibility
     const sponsorName = sponsorData.sponsorName || sponsorData.name
+    
+    // Image upload processing FIRST (before database insert)
+    let uploadedLogoUrl = null;
+    if (sponsorData.logoFile) {
+      console.log('🖼️ [addSponsor] Processing logo upload for file:', sponsorData.logoFile.name)
+      const uploadResult = await uploadSponsorLogo(sponsorData.logoFile, sponsorName);
+      if (uploadResult.error) {
+        console.error('❌ [addSponsor] Logo upload failed:', uploadResult.error)
+        // Continue with submission without logo rather than failing entirely
+      } else {
+        uploadedLogoUrl = uploadResult.logoUrl;
+        console.log('✅ [addSponsor] Logo uploaded successfully:', uploadedLogoUrl)
+      }
+    }
     const contactName = sponsorData.contactName || sponsorData.name
     
     // Map donation type correctly - this is the CONTRIBUTION TYPE (monetary/items/services)
@@ -454,7 +468,7 @@ export const addSponsor = async (sponsorData: any) => {
       display_on_website: sponsorData.displayOnWebsite !== false,
       approved: sponsorData.approved !== undefined ? sponsorData.approved : false,
       questions: sponsorData.questions,
-      logo_url: sponsorData.logoUrl || sponsorData.logo_url || null
+      logo_url: uploadedLogoUrl || sponsorData.logoUrl || sponsorData.logo_url || null
     }
     
     console.log('📝 [addSponsor] Database insert data:', insertData)
@@ -543,18 +557,28 @@ export const getApprovedSponsors = async () => {
 // Upload sponsor logo to Supabase storage
 export const uploadSponsorLogo = async (file: File, sponsorName: string) => {
   try {
-    console.log('📤 [uploadSponsorLogo] Uploading logo for:', sponsorName)
+    console.log('📤 [uploadSponsorLogo] Starting upload process...')
+    console.log('   - Sponsor name:', sponsorName)
+    console.log('   - File name:', file.name)
+    console.log('   - File type:', file.type)
+    console.log('   - File size:', `${(file.size / 1024 / 1024).toFixed(2)} MB`)
+    console.log('   - Supabase URL:', environmentInfo.databaseUrl)
+    console.log('   - Environment:', environmentInfo.environment)
     
     // Validate file type
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      throw new Error('Invalid file type. Please upload a JPEG, PNG, or WebP image.');
+      const errorMsg = `Invalid file type: ${file.type}. Please upload a JPEG, PNG, or WebP image.`;
+      console.error('❌ [uploadSponsorLogo] File type validation failed:', errorMsg)
+      throw new Error(errorMsg);
     }
 
     // Validate file size (5MB max)
     const maxSize = 5 * 1024 * 1024; // 5MB in bytes
     if (file.size > maxSize) {
-      throw new Error('File size too large. Please upload an image smaller than 5MB.');
+      const errorMsg = `File size too large: ${(file.size / 1024 / 1024).toFixed(2)} MB. Please upload an image smaller than 5MB.`;
+      console.error('❌ [uploadSponsorLogo] File size validation failed:', errorMsg)
+      throw new Error(errorMsg);
     }
 
     // Generate unique filename
@@ -562,9 +586,31 @@ export const uploadSponsorLogo = async (file: File, sponsorName: string) => {
     const fileName = `${Date.now()}-${sponsorName.replace(/[^a-zA-Z0-9]/g, '_')}.${fileExt}`;
     const filePath = `sponsor-logos/${fileName}`;
 
-    console.log('📂 [uploadSponsorLogo] Uploading to path:', filePath)
+    console.log('📂 [uploadSponsorLogo] Upload details:')
+    console.log('   - Generated filename:', fileName)
+    console.log('   - Full path:', filePath)
+    console.log('   - Storage bucket: tournament-files')
+
+    // Check if storage is accessible first
+    console.log('🔍 [uploadSponsorLogo] Testing storage bucket access...')
+    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets()
+    if (bucketError) {
+      console.error('❌ [uploadSponsorLogo] Cannot access storage buckets:', bucketError)
+      throw new Error(`Storage access failed: ${bucketError.message}`);
+    } else {
+      console.log('✅ [uploadSponsorLogo] Storage accessible. Available buckets:', buckets?.map(b => b.name))
+      
+      // Check if tournament-files bucket exists
+      const tournamentBucket = buckets?.find(b => b.name === 'tournament-files')
+      if (!tournamentBucket) {
+        console.error('❌ [uploadSponsorLogo] tournament-files bucket does not exist!')
+        console.log('📦 Available buckets:', buckets?.map(b => b.name) || 'none')
+        throw new Error('tournament-files storage bucket not found. Please create the bucket in Supabase dashboard or contact admin.');
+      }
+    }
 
     // Upload to Supabase storage
+    console.log('🚀 [uploadSponsorLogo] Starting file upload...')
     const { data, error } = await supabase.storage
       .from('tournament-files')
       .upload(filePath, file, {
@@ -573,16 +619,22 @@ export const uploadSponsorLogo = async (file: File, sponsorName: string) => {
       });
 
     if (error) {
-      console.error('❌ [uploadSponsorLogo] Upload error:', error)
+      console.error('❌ [uploadSponsorLogo] Upload failed with error:', error)
+      console.error('   - Error code:', error.statusCode || 'unknown')
+      console.error('   - Error message:', error.message)
+      console.error('   - Error details:', error)
       throw new Error(`Upload failed: ${error.message}`);
     }
 
+    console.log('✅ [uploadSponsorLogo] Upload successful:', data)
+
     // Get public URL
+    console.log('🔗 [uploadSponsorLogo] Generating public URL...')
     const { data: { publicUrl } } = supabase.storage
       .from('tournament-files')
       .getPublicUrl(filePath);
 
-    console.log('✅ [uploadSponsorLogo] Upload successful:', publicUrl)
+    console.log('✅ [uploadSponsorLogo] Public URL generated:', publicUrl)
     return { logoUrl: publicUrl, error: null };
   } catch (error) {
     console.error('❌ [uploadSponsorLogo] Unexpected error:', error)

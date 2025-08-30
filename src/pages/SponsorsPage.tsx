@@ -19,6 +19,8 @@ export const SponsorsPage: React.FC = () => {
   const [itemValue, setItemValue] = React.useState('');
   const [showLogoUpload, setShowLogoUpload] = React.useState(false);
   const [validationErrors, setValidationErrors] = React.useState<{[key: string]: string}>({});
+  const [formSubmitted, setFormSubmitted] = React.useState(false);
+  const [submittedSponsorName, setSubmittedSponsorName] = React.useState('');
 
   React.useEffect(() => {
     const fetchSponsors = async () => {
@@ -130,18 +132,38 @@ export const SponsorsPage: React.FC = () => {
 
     try {
       await addSponsor(sponsorData);
-      toast.success('Thank you for becoming a sponsor!');
+      
+      // Store sponsor name and set form as submitted
+      setSubmittedSponsorName(sponsorData.name || 'Your sponsor');
+      setFormSubmitted(true);
+      
       // Refresh sponsors list
       const result = await getSponsors();
       setSponsors(result.data || []);
-      // Reset form
-      (e.target as HTMLFormElement).reset();
+      
+      // Reset form state (but don't show it)
+      setDonationAmount('');
+      setItemValue('');
+      setSelectedFile(null);
+      setValidationErrors({});
     } catch (error) {
       console.error('Sponsor submission error:', error);
       toast.error('Failed to submit sponsorship. Please try again.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const startNewSubmission = () => {
+    setFormSubmitted(false);
+    setSubmittedSponsorName('');
+    setSponsorType('business');
+    setDonationType('monetary');
+    setDonationAmount('');
+    setItemValue('');
+    setSelectedFile(null);
+    setShowLogoUpload(false);
+    setValidationErrors({});
   };
 
   return (
@@ -202,7 +224,7 @@ export const SponsorsPage: React.FC = () => {
                   {sponsor.logo_url ? (
                     <img
                       src={sponsor.logo_url}
-                      alt={sponsor.name}
+                      alt={sponsor.sponsor_name || sponsor.name}
                       className="w-full h-32 object-contain mb-4 rounded"
                     />
                   ) : (
@@ -211,11 +233,13 @@ export const SponsorsPage: React.FC = () => {
                     </div>
                   )}
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    {sponsor.name}
+                    {sponsor.sponsor_name || sponsor.name}
                   </h3>
-                  <p className="text-orange-600 font-medium">
-                    ${sponsor.donation_amount} Donation
-                  </p>
+                  {sponsor.donation_amount && (
+                    <p className="text-orange-600 font-medium">
+                      ${sponsor.donation_amount} Donation
+                    </p>
+                  )}
                 </Card>
               </motion.div>
             ))}
@@ -229,8 +253,46 @@ export const SponsorsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Sponsorship Form */}
-      <Card className="p-8 max-w-2xl mx-auto">
+      {/* Sponsorship Form or Success Message */}
+      {formSubmitted ? (
+        /* Success Message */
+        <Card className="p-8 max-w-2xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="space-y-6"
+          >
+            <div className="text-green-600">
+              <Gift className="h-16 w-16 mx-auto mb-4" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                🎉 Thank You for Your Sponsorship!
+              </h2>
+              <p className="text-lg text-gray-700 mb-6">
+                Thank you, <strong>{submittedSponsorName}</strong>, for your sponsorship submission! 
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                <h3 className="font-semibold text-blue-800 mb-2">What happens next?</h3>
+                <ul className="text-blue-700 text-left space-y-2">
+                  <li>• Your submission is under review and will be processed within 24 hours</li>
+                  <li>• Approved sponsors will be displayed on our sponsors page</li>
+                  <li>• For item donations, we'll contact you to arrange pickup</li>
+                  <li>• You'll receive a confirmation email once your sponsorship is approved</li>
+                </ul>
+              </div>
+            </div>
+            <Button
+              onClick={startNewSubmission}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
+            >
+              Submit Another Sponsorship
+            </Button>
+          </motion.div>
+        </Card>
+      ) : (
+        /* Sponsorship Form */
+        <Card className="p-8 max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">
             Become a Sponsor or Individual Supporter
@@ -394,6 +456,22 @@ export const SponsorsPage: React.FC = () => {
                     console.log('💰 [donationAmount] Changed from', donationAmount, 'to', e.target.value)
                     setDonationAmount(e.target.value)
                   }}
+                  onFocus={(e) => {
+                    // Remove focus on wheel to prevent scroll-based value changes
+                    const handleWheel = (event: WheelEvent) => {
+                      event.preventDefault()
+                      e.target.blur()
+                    }
+                    const element = e.target as HTMLInputElement
+                    element.addEventListener('wheel', handleWheel, { passive: false })
+                    
+                    // Clean up on blur
+                    const cleanup = () => {
+                      element.removeEventListener('wheel', handleWheel)
+                      element.removeEventListener('blur', cleanup)
+                    }
+                    element.addEventListener('blur', cleanup)
+                  }}
                   required
                 />
               </div>
@@ -423,6 +501,22 @@ export const SponsorsPage: React.FC = () => {
                     className="pl-8"
                     value={itemValue}
                     onChange={(e) => setItemValue(e.target.value)}
+                    onFocus={(e) => {
+                      // Remove focus on wheel to prevent scroll-based value changes
+                      const handleWheel = (event: WheelEvent) => {
+                        event.preventDefault()
+                        e.target.blur()
+                      }
+                      const element = e.target as HTMLInputElement
+                      element.addEventListener('wheel', handleWheel, { passive: false })
+                      
+                      // Clean up on blur
+                      const cleanup = () => {
+                        element.removeEventListener('wheel', handleWheel)
+                        element.removeEventListener('blur', cleanup)
+                      }
+                      element.addEventListener('blur', cleanup)
+                    }}
                     required
                   />
                 </div>
@@ -435,7 +529,11 @@ export const SponsorsPage: React.FC = () => {
 
           {/* Logo Upload (Conditional on $40+) */}
           {showLogoUpload && (
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div 
+              className="bg-blue-50 p-4 rounded-lg border border-blue-200"
+              onMouseEnter={(e) => e.stopPropagation()}
+              onMouseLeave={(e) => e.stopPropagation()}
+            >
               <label htmlFor="logo" className="text-blue-800 font-medium block mb-2">Upload Logo (Optional)</label>
               <input
                 id="logo"
@@ -444,6 +542,9 @@ export const SponsorsPage: React.FC = () => {
                 accept=".jpg,.jpeg,.png,.gif"
                 className="mt-2 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 onChange={handleFileChange}
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
               />
               <p className="text-sm text-blue-700 mt-2">
                 Sponsors contributing $40+ will be featured with logo on our homepage! 
@@ -494,7 +595,8 @@ export const SponsorsPage: React.FC = () => {
             </button>
           </div>
         </form>
-      </Card>
+        </Card>
+      )}
     </div>
   );
 };

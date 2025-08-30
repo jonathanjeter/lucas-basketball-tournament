@@ -26,16 +26,18 @@ export const Header: React.FC = () => {
             <div className="flex flex-col">
               <div className="flex items-center space-x-2">
                 <h1 className="text-xl font-bold text-gray-900">3-on-3 Hoops</h1>
-                {/* Environment Indicator */}
-                {environmentInfo.isStaging ? (
+                {/* Environment Indicator - Only show in staging mode */}
+                {(() => {
+                  console.log('🔍 [Header] Environment debug:', {
+                    'VITE_STAGING_MODE': import.meta.env.VITE_STAGING_MODE,
+                    'environmentInfo.isStaging': environmentInfo.isStaging,
+                    'environmentInfo.environment': environmentInfo.environment
+                  });
+                  return environmentInfo.isStaging;
+                })() && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
                     <Database className="w-3 h-3 mr-1" />
                     STAGING
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                    <Database className="w-3 h-3 mr-1" />
-                    PRODUCTION
                   </span>
                 )}
               </div>

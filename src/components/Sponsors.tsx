@@ -85,34 +85,47 @@ export const Sponsors: React.FC = () => {
           </p>
         </motion.div>
 
-        <div className="flex justify-center">
-          {sponsors.map((sponsor, index) => (
-            <motion.div
-              key={sponsor.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-            >
-              {sponsor.website ? (
-                <a 
-                  href={sponsor.website}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <Card hover className="p-6 text-center h-full transition-transform hover:scale-105">
+        {sponsors.length > 0 ? (
+          <div className="flex justify-center flex-wrap gap-8">
+            {sponsors.map((sponsor, index) => (
+              <motion.div
+                key={sponsor.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+              >
+                {sponsor.website ? (
+                  <a 
+                    href={sponsor.website}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <Card hover className="p-6 text-center h-full transition-transform hover:scale-105">
+                      <SponsorContent sponsor={sponsor} />
+                    </Card>
+                  </a>
+                ) : (
+                  <Card className="p-6 text-center h-full">
                     <SponsorContent sponsor={sponsor} />
                   </Card>
-                </a>
-              ) : (
-                <Card className="p-6 text-center h-full">
-                  <SponsorContent sponsor={sponsor} />
-                </Card>
-              )}
-            </motion.div>
-          ))}
-        </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Building className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-600 mb-2">
+              Sponsor Opportunities Available!
+            </h3>
+            <p className="text-gray-500 max-w-md mx-auto">
+              We're looking for amazing sponsors to support our tournament. 
+              Contact us to learn about sponsorship opportunities starting at just $20.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -157,8 +170,13 @@ const SponsorContent: React.FC<{ sponsor: Sponsor }> = ({ sponsor }) => (
     <h4 className="text-lg font-semibold text-gray-900">
       {sponsor.sponsor_name}
     </h4>
+    {sponsor.donation_amount && (
+      <p className="text-sm text-green-600 font-medium mt-1">
+        ${sponsor.donation_amount} Donation
+      </p>
+    )}
     {sponsor.donation_amount && sponsor.donation_amount >= 40 && (
-      <p className="text-sm text-orange-600 font-medium mt-1">
+      <p className="text-xs text-orange-600 font-medium mt-1">
         Premium Sponsor
       </p>
     )}
