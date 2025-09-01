@@ -50,10 +50,10 @@ export const ProjectPage: React.FC = () => {
         name: data.name,
         email: data.email || null,
         phone: data.phone || null,
-        ageOrRank: data.ageOrRank || null
+        ageRank: data.ageOrRank || null
       });
       
-      toast.success(`Thank you for volunteering! Your volunteer ID is ${result.data.volunteerId}. We'll be in touch with project details.`);
+      toast.success('Thank you for volunteering! We\'ll be in touch with project details.');
       reset();
     } catch (error: any) {
       console.error('Volunteer signup error:', error);

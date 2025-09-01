@@ -16,9 +16,9 @@ export default function ManualVolunteerEntry({ onVolunteerAdded }: ManualVolunte
     email: '',
     phone: '',
     ageOrRank: '',
-    availableDates: '',
+    availableDates: 'Saturday September 6, 2025 - Cemetery Project',
     skills: '',
-    transportation: '',
+    transportation: 'yes',
     notes: ''
   });
   
@@ -54,15 +54,15 @@ export default function ManualVolunteerEntry({ onVolunteerAdded }: ManualVolunte
     
     try {
       const volunteerData = {
-        name: formData.name,
-        email: formData.email || null,
-        phone: formData.phone || null,
-        age_or_rank: formData.ageOrRank || null,
-        available_dates: formData.availableDates || null,
+        volunteer_name: formData.name,
+        email: formData.email || 'noemail@provided.com',
+        phone: formData.phone || 'No phone provided',
+        age_or_rank: formData.ageOrRank || 'Adult',
+        dates_available: 'Saturday September 6, 2025 - Cemetery Headstone Restoration Project',
         skills: formData.skills || null,
-        transportation: formData.transportation || null,
-        notes: formData.notes || null,
-        created_at: new Date().toISOString()
+        transportation: 'yes',
+        questions: formData.notes || null,
+        role_preference: null
       };
       
       const { error } = await supabase.from('volunteers').insert([volunteerData]);
@@ -75,9 +75,9 @@ export default function ManualVolunteerEntry({ onVolunteerAdded }: ManualVolunte
         email: '',
         phone: '',
         ageOrRank: '',
-        availableDates: '',
+        availableDates: 'Saturday September 6, 2025 - Cemetery Project',
         skills: '',
-        transportation: '',
+        transportation: 'yes',
         notes: ''
       });
       
@@ -172,14 +172,21 @@ export default function ManualVolunteerEntry({ onVolunteerAdded }: ManualVolunte
           </div>
           
           <div>
-            <Label htmlFor="transportation">Transportation</Label>
-            <Input
+            <Label htmlFor="transportation">Transportation*</Label>
+            <select
               id="transportation"
               value={formData.transportation}
               onChange={(e) => setFormData({...formData, transportation: e.target.value})}
-              placeholder="e.g., Can drive, Need ride, etc."
-            />
+              className="w-full p-2 border border-gray-300 rounded-md"
+              required
+            >
+              <option value="yes">I can provide my own transportation</option>
+              <option value="no">I need transportation</option>
+              <option value="sometimes">Transportation sometimes available</option>
+            </select>
           </div>
+          
+
           
           <div>
             <Label htmlFor="volunteerNotes">Notes</Label>

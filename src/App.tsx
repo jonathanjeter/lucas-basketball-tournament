@@ -15,6 +15,7 @@ import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { DonationPolicyPage } from './pages/DonationPolicyPage';
 import { LiabilityWaiverPage } from './pages/LiabilityWaiverPage';
+import { TournamentManager } from './pages/TournamentManager';
 
 import './App.css';
 
@@ -37,6 +38,7 @@ function App() {
             <Route path="/terms-of-service" element={<TermsOfServicePage />} />
             <Route path="/donation-policy" element={<DonationPolicyPage />} />
             <Route path="/liability-waiver" element={<LiabilityWaiverPage />} />
+            <Route path="/tournament-manager" element={<TournamentManager />} />
           </Routes>
         </main>
         

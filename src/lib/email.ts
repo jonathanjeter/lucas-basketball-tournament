@@ -349,6 +349,104 @@ export const sendRegistrationEmails = async (registrationData: any): Promise<{
 }
 
 // =============================================================================
+// VOLUNTEER EMAIL FUNCTIONS
+// =============================================================================
+
+// Build volunteer email data for confirmation
+const buildVolunteerEmailData = (volunteerData: any) => {
+  return {
+    to_name: volunteerData.name,
+    to_email: volunteerData.email,
+    from_name: 'Lucas Jeter Eagle Scout Project',
+    volunteer_name: volunteerData.name,
+    volunteer_phone: volunteerData.phone || 'Not provided',
+    volunteer_age_rank: volunteerData.ageRank || 'Not provided',
+    project_date: 'Saturday, September 6, 2025',
+    project_time: '7:30 AM - 12:00 PM',
+    project_location: 'Pioneer Cemetery, Waxahachie, TX',
+    project_details: 'Cemetery restoration with SAR training (minors OK with supervision)',
+    contact_email: 'lucasjeter2025@gmail.com',
+    contact_phone: '(469) 441-8526'
+  }
+}
+
+// Build admin notification data for volunteers
+const buildVolunteerAdminData = (volunteerData: any) => {
+  return {
+    to_name: 'Lucas Jeter',
+    to_email: 'lucasjeter2025@gmail.com',
+    from_name: 'Basketball Tournament Website',
+    inquiry_type: 'New Volunteer Signup',
+    volunteer_name: volunteerData.name,
+    volunteer_email: volunteerData.email || 'Not provided',
+    volunteer_phone: volunteerData.phone || 'Not provided',
+    volunteer_age_rank: volunteerData.ageRank || 'Not provided',
+    signup_date: new Date().toLocaleString()
+  }
+}
+
+// Send volunteer confirmation emails
+export const sendVolunteerEmails = async (volunteerData: any): Promise<{
+  participantSuccess: boolean
+  adminSuccess: boolean
+  errors: string[]
+  details: {
+    participantAttempts?: number
+    adminAttempts?: number
+    participantError?: string
+    adminError?: string
+  }
+}> => {
+  console.log('📧 Starting volunteer email sequence...')
+  const errors: string[] = []
+  const details: any = {}
+  
+  let participantResult = { success: false, attempts: 0, error: '' }
+  let adminResult = { success: false, attempts: 0, error: '' }
+
+  // Send volunteer confirmation (only if email provided)
+  if (volunteerData.email) {
+    console.log('📧 Step 1: Sending volunteer confirmation...')
+    const participantData = buildVolunteerEmailData(volunteerData)
+    participantResult = await sendParticipantConfirmation(participantData)
+    
+    details.participantAttempts = participantResult.attempts
+    if (!participantResult.success && participantResult.error) {
+      details.participantError = participantResult.error
+      errors.push(`Volunteer confirmation failed after ${participantResult.attempts} attempts: ${participantResult.error}`)
+    }
+  } else {
+    console.log('📧 Skipping volunteer confirmation - no email provided')
+    participantResult.success = true // Consider it "successful" if no email was provided
+  }
+  
+  // Send admin notification
+  console.log('📧 Step 2: Sending volunteer admin notification...')
+  const adminData = buildVolunteerAdminData(volunteerData)
+  adminResult = await sendAdminNotification(adminData)
+  
+  details.adminAttempts = adminResult.attempts
+  if (!adminResult.success && adminResult.error) {
+    details.adminError = adminResult.error
+    errors.push(`Admin notification failed after ${adminResult.attempts} attempts: ${adminResult.error}`)
+  }
+  
+  const summary = {
+    participantSuccess: participantResult.success,
+    adminSuccess: adminResult.success,
+    totalErrors: errors.length
+  }
+  console.log('📧 Volunteer email sequence complete:', summary)
+  
+  return {
+    participantSuccess: participantResult.success,
+    adminSuccess: adminResult.success,
+    errors,
+    details
+  }
+}
+
+// =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
 

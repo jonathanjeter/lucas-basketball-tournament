@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 
 export const AdminPage: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  const [activeSection, setActiveSection] = React.useState<'tournament' | 'project'>('tournament');
+  const [activeSection, setActiveSection] = React.useState<'tournament' | 'project'>('project');
   const [activeTab, setActiveTab] = React.useState('dashboard');
   const [teams, setTeams] = React.useState<any[]>([]);
   const [teamsLoading, setTeamsLoading] = React.useState(false);
@@ -35,6 +35,11 @@ export const AdminPage: React.FC = () => {
     totalVolunteers: 0
   });
 
+  // Debug: Log stats state whenever it changes
+  React.useEffect(() => {
+    console.log('🔄 [Admin Dashboard] Stats state updated:', stats);
+  }, [stats]);
+
   // Check if user is already authenticated (simple session storage)
   React.useEffect(() => {
     const authStatus = sessionStorage.getItem('adminAuthenticated');
@@ -51,6 +56,19 @@ export const AdminPage: React.FC = () => {
   const handleLogout = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('adminAuthenticated');
+  };
+
+  // Manual refresh function
+  const handleManualRefresh = async () => {
+    console.log('🔄 Manual refresh triggered');
+    toast.loading('Refreshing dashboard...', { id: 'manual-refresh' });
+    try {
+      await fetchRealStats();
+      toast.success('Dashboard refreshed!', { id: 'manual-refresh' });
+    } catch (error) {
+      console.error('Manual refresh failed:', error);
+      toast.error('Refresh failed', { id: 'manual-refresh' });
+    }
   };
 
   // Fetch real-time stats from database
@@ -70,47 +88,64 @@ export const AdminPage: React.FC = () => {
       // Get volunteers
       const { data: volunteers, error: volunteersError } = await supabase
         .from('volunteers')
-        .select('id, status');
+        .select('*'); // Select all fields to debug
       
-      if (teams && !teamsError) {
-        const totalRegistrations = teams.length;
-        const pendingRegistrations = teams.filter(t => t.approved === false).length;
-        const juniorTeams = teams.filter(t => t.age_category === 'middle-school').length;
-        const seniorTeams = teams.filter(t => t.age_category === 'high-school-adult').length;
-        
-        // Calculate total funds from approved teams
-        const teamFunds = teams
-          .filter(t => t.approved === true)
-          .reduce((sum, t) => sum + (t.donation_amount || 0), 0);
-        
-        let sponsorFunds = 0;
-        if (sponsors && !sponsorsError) {
-          sponsorFunds = sponsors
-            .filter(s => s.approved === true)
-            .reduce((sum, s) => sum + (s.donation_amount || 0), 0);
-        }
-        
-        const totalFundsRaised = teamFunds + sponsorFunds;
-        const goalProgress = Math.round((totalFundsRaised / 400) * 100);
-        
-        setStats({
-          totalRegistrations,
-          pendingRegistrations,
-          totalFundsRaised,
-          goalProgress,
-          juniorTeams,
-          seniorTeams,
-          totalSponsors: sponsors?.length || 0,
-          totalVolunteers: volunteers?.length || 0
-        });
-
-        console.log('Stats fetched successfully:', {
-          totalRegistrations,
-          pendingRegistrations,
-          totalFundsRaised,
-          goalProgress
-        });
+      console.log('🔍 [Admin Dashboard] Volunteers query result:', {
+        volunteers: volunteers,
+        error: volunteersError,
+        count: volunteers?.length || 0
+      });
+      
+      // Always calculate stats, even if no teams exist (service project scenario)
+      const totalRegistrations = teams?.length || 0;
+      const pendingRegistrations = teams?.filter(t => t.approved === false).length || 0;
+      const juniorTeams = teams?.filter(t => t.age_category === 'middle-school').length || 0;
+      const seniorTeams = teams?.filter(t => t.age_category === 'high-school-adult').length || 0;
+      
+      // Calculate total funds from approved teams
+      const teamFunds = teams?.filter(t => t.approved === true)
+        .reduce((sum, t) => sum + (t.donation_amount || 0), 0) || 0;
+      
+      let sponsorFunds = 0;
+      if (sponsors && !sponsorsError) {
+        sponsorFunds = sponsors
+          .filter(s => s.approved === true)
+          .reduce((sum, s) => sum + (s.donation_amount || 0), 0);
       }
+      
+      const totalFundsRaised = teamFunds + sponsorFunds;
+      const goalProgress = Math.round((totalFundsRaised / 400) * 100);
+      
+      // Handle volunteers data properly
+      const totalVolunteers = (volunteers && !volunteersError) ? volunteers.length : 0;
+      
+      console.log('📊 [Admin Dashboard] Stats calculation:', {
+        totalVolunteers: totalVolunteers,
+        volunteersData: volunteers,
+        volunteersError: volunteersError,
+        teamsExist: !!teams,
+        teamsLength: teams?.length || 0
+      });
+      
+      setStats({
+        totalRegistrations,
+        pendingRegistrations,
+        totalFundsRaised,
+        goalProgress,
+        juniorTeams,
+        seniorTeams,
+        totalSponsors: sponsors?.length || 0,
+        totalVolunteers: totalVolunteers
+      });
+
+      console.log('Stats fetched successfully:', {
+        totalRegistrations,
+        pendingRegistrations,
+        totalFundsRaised,
+        goalProgress,
+        totalVolunteers: totalVolunteers,
+        totalSponsors: sponsors?.length || 0
+      });
     } catch (error) {
       console.error('Database connection failed:', error);
       // Keep stats at current value if error
@@ -297,6 +332,7 @@ export const AdminPage: React.FC = () => {
       await updateVolunteerStatus(volunteerId, status);
       toast.success(`Volunteer status updated to ${status}`);
       fetchVolunteers(); // Refresh the list
+      fetchRealStats(); // Update dashboard stats
     } catch (error: any) {
       console.error('Failed to update volunteer status:', error);
       toast.error(error.message || 'Failed to update volunteer status');
@@ -712,15 +748,13 @@ export const AdminPage: React.FC = () => {
   }
 
   const sections = [
-    { id: 'tournament', name: 'Tournament Admin', icon: Trophy },
     { id: 'project', name: 'Scout Project Admin', icon: Shield },
+    { id: 'tournament', name: 'Tournament Admin', icon: Trophy },
   ];
 
   const tournamentTabs = [
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
     { id: 'registrations', name: 'Registrations', icon: Users },
-    { id: 'sponsors', name: 'Sponsors', icon: Building },
-    { id: 'volunteers', name: 'Volunteers', icon: UserCheck },
     { id: 'manual-entry', name: 'Manual Entry', icon: Plus },
     { id: 'email-testing', name: 'Email Testing', icon: Mail },
     { id: 'brackets', name: 'Brackets', icon: Trophy },
@@ -729,8 +763,9 @@ export const AdminPage: React.FC = () => {
   const projectTabs = [
     { id: 'dashboard', name: 'Overview', icon: BarChart3 },
     { id: 'volunteers', name: 'Volunteers', icon: Heart },
+    { id: 'sponsors', name: 'Sponsors', icon: Building },
     { id: 'contact', name: 'Contact Inquiries', icon: MessageSquare },
-    { id: 'fundraising', name: 'Fundraising', icon: BarChart3 },
+    { id: 'fundraising', name: 'Fundraising', icon: DollarSign },
   ];
 
   const currentTabs = activeSection === 'tournament' ? tournamentTabs : projectTabs;
@@ -768,14 +803,45 @@ export const AdminPage: React.FC = () => {
                 <span className="text-sm text-gray-600">Tournament: Aug 30, 2025</span>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="text-red-600 border-red-300 hover:bg-red-50 h-11 px-3"
-              size="sm"
-            >
-              Logout
-            </Button>
+            <div className="flex items-center space-x-2">
+              {/* Manual Refresh Button */}
+              <Button 
+                variant="outline" 
+                onClick={handleManualRefresh}
+                className="text-blue-600 border-blue-300 hover:bg-blue-50 h-11 px-3"
+                size="sm"
+              >
+                <motion.div
+                  animate={{ rotate: 0 }}
+                  whileTap={{ rotate: 360 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Target className="h-4 w-4 mr-1" />
+                </motion.div>
+                Refresh
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleLogout}
+                className="text-red-600 border-red-300 hover:bg-red-50 h-11 px-3"
+                size="sm"
+              >
+                Logout
+              </Button>
+            </div>
+          </div>
+          {/* Real-time Stats Summary */}
+          <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center space-x-4">
+              <span>Last updated: {new Date().toLocaleTimeString()}</span>
+              <span>•</span>
+              <span className="text-green-600 font-medium">{stats.totalVolunteers} volunteers</span>
+              <span>•</span>
+              <span className="text-orange-600 font-medium">${stats.totalFundsRaised} raised</span>
+            </div>
+            <div className="text-xs">
+              Auto-refresh: 30s
+            </div>
           </div>
         </div>
       </div>
@@ -833,56 +899,58 @@ export const AdminPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white p-6 rounded-lg shadow border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-orange-600">{stats.totalRegistrations}</p>
-                    <p className="text-gray-600 text-sm">Registrations</p>
+            {/* Tournament Stats Cards - Only show for Tournament Admin */}
+            {activeSection === 'tournament' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white p-6 rounded-lg shadow border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-orange-600">{stats.totalRegistrations}</p>
+                      <p className="text-gray-600 text-sm">Registrations</p>
+                    </div>
+                    <div className="text-orange-500">
+                      <Users className="h-8 w-8" />
+                    </div>
                   </div>
-                  <div className="text-orange-500">
-                    <Users className="h-8 w-8" />
+                </div>
+                
+                <div className="bg-white p-6 rounded-lg shadow border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-red-600">{stats.pendingRegistrations}</p>
+                      <p className="text-gray-600 text-sm">Pending</p>
+                    </div>
+                    <div className="text-red-500">
+                      <Clock className="h-8 w-8" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white p-6 rounded-lg shadow border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-green-600">${stats.totalFundsRaised}</p>
+                      <p className="text-gray-600 text-sm">Raised</p>
+                    </div>
+                    <div className="text-green-500">
+                      <DollarSign className="h-8 w-8" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white p-6 rounded-lg shadow border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-blue-600">{stats.goalProgress}%</p>
+                      <p className="text-gray-600 text-sm">Goal</p>
+                    </div>
+                    <div className="text-blue-500">
+                      <Target className="h-8 w-8" />
+                    </div>
                   </div>
                 </div>
               </div>
-              
-              <div className="bg-white p-6 rounded-lg shadow border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-red-600">{stats.pendingRegistrations}</p>
-                    <p className="text-gray-600 text-sm">Pending</p>
-                  </div>
-                  <div className="text-red-500">
-                    <Clock className="h-8 w-8" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white p-6 rounded-lg shadow border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-green-600">${stats.totalFundsRaised}</p>
-                    <p className="text-gray-600 text-sm">Raised</p>
-                  </div>
-                  <div className="text-green-500">
-                    <DollarSign className="h-8 w-8" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white p-6 rounded-lg shadow border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-blue-600">{stats.goalProgress}%</p>
-                    <p className="text-gray-600 text-sm">Goal</p>
-                  </div>
-                  <div className="text-blue-500">
-                    <Target className="h-8 w-8" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Tournament Operations & Division Status */}
             {activeSection === 'tournament' ? (
@@ -924,32 +992,54 @@ export const AdminPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">Project Status</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span>Volunteers:</span>
-                      <span className="font-bold text-green-600">{dashboardStats.project.totalVolunteers}</span>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="p-6 border-l-4 border-green-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Volunteers</p>
+                      <p className="text-3xl font-bold text-green-600">{dashboardStats.project.totalVolunteers}</p>
+                      <p className="text-xs text-gray-500 mt-1">Need 8-10 minimum</p>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span>Sponsors Approved:</span>
-                      <span className="font-bold text-blue-600">{dashboardStats.project.sponsorsApproved}</span>
-                    </div>
+                    <Users className="h-12 w-12 text-green-500 opacity-20" />
                   </div>
                 </Card>
-                <Card className="p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">Fundraising Progress</h3>
-                  <div className="space-y-3">
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="bg-orange-500 h-3 rounded-full transition-all"
-                        style={{ width: `${(dashboardStats.tournament.totalRaised / dashboardStats.tournament.goalAmount) * 100}%` }}
-                      ></div>
+
+                <Card className="p-6 border-l-4 border-yellow-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Pending</p>
+                      <p className="text-3xl font-bold text-yellow-600">{volunteers.filter(v => !v.status || v.status === 'pending').length}</p>
+                      <p className="text-xs text-gray-500 mt-1">Awaiting contact</p>
                     </div>
-                    <p className="text-sm text-gray-600 text-center">
-                      ${dashboardStats.tournament.totalRaised} of $400 goal
-                    </p>
+                    <Clock className="h-12 w-12 text-yellow-500 opacity-20" />
+                  </div>
+                </Card>
+
+                <Card className="p-6 border-l-4 border-blue-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Confirmed</p>
+                      <p className="text-3xl font-bold text-blue-600">{volunteers.filter(v => v.status === 'confirmed').length}</p>
+                      <p className="text-xs text-gray-500 mt-1">Ready for Saturday</p>
+                    </div>
+                    <CheckCircle className="h-12 w-12 text-blue-500 opacity-20" />
+                  </div>
+                </Card>
+
+                <Card className="p-6 border-l-4 border-orange-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Fundraising</p>
+                      <p className="text-2xl font-bold text-orange-600">$270</p>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div 
+                          className="bg-orange-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(270 / 400) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">68% of $400 goal</p>
+                    </div>
+                    <DollarSign className="h-12 w-12 text-orange-500 opacity-20" />
                   </div>
                 </Card>
               </div>
@@ -1132,7 +1222,121 @@ export const AdminPage: React.FC = () => {
         )}
 
         {activeTab === 'sponsors' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Tournament Sponsor Summary */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Tournament Sponsor Summary</h3>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-green-900">Tournament Sponsorships (August 30)</p>
+                    <p className="text-sm text-green-600">Local business sponsors collected during tournament</p>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">$150</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900">Tournament Sponsors</p>
+                  <p className="text-lg font-bold text-blue-600">3 sponsors</p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <p className="text-sm font-medium text-purple-900">Additional Sponsors</p>
+                  <p className="text-lg font-bold text-purple-600">{sponsors.length} sponsors</p>
+                </div>
+                <div className="bg-orange-50 p-3 rounded-lg">
+                  <p className="text-sm font-medium text-orange-900">Total Sponsor Revenue</p>
+                  <p className="text-lg font-bold text-orange-600">${150 + sponsors.reduce((sum, s) => sum + (s.amount || 0), 0)}</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Add New Sponsor Form */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Sponsor</h3>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p className="text-yellow-800 text-sm">
+                  <strong>Note:</strong> Use this form to add sponsors beyond the tournament $150. New sponsors will update the fundraising total.
+                </p>
+              </div>
+              
+              <form className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Sponsor Name *</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="Business or individual name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Donation Amount *</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
+                    <input
+                      type="email"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="sponsor@business.com"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Address (Optional)</label>
+                  <textarea
+                    rows={2}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="123 Main St, City, TX 75000"
+                  ></textarea>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                  <textarea
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Special requests, recognition preferences, etc."
+                  ></textarea>
+                </div>
+                
+                <Button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 px-6 py-2"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Sponsor
+                </Button>
+              </form>
+            </Card>
+
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-blue-800 text-sm">
                 <strong>$40+ Sponsors:</strong> Approved sponsors with $40+ donations automatically display on homepage.
@@ -1547,7 +1751,11 @@ export const AdminPage: React.FC = () => {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <ManualSponsorEntry onSponsorAdded={() => { fetchSponsors(); fetchRealStats(); }} />
-              <ManualVolunteerEntry onVolunteerAdded={() => { fetchVolunteers(); fetchRealStats(); }} />
+              <ManualVolunteerEntry onVolunteerAdded={() => { 
+                fetchVolunteers(); 
+                fetchRealStats(); 
+                toast.success('Volunteer added! Dashboard updated.', { id: 'volunteer-added' });
+              }} />
             </div>
           </div>
         )}
@@ -1569,9 +1777,180 @@ export const AdminPage: React.FC = () => {
 
         {activeTab === 'fundraising' && (
           <div className="space-y-6">
+            {/* Fundraising Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="p-6 border-l-4 border-green-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Tournament Total</p>
+                    <p className="text-3xl font-bold text-green-600">$270</p>
+                    <p className="text-xs text-gray-500 mt-1">$120 cash + $150 sponsors</p>
+                  </div>
+                  <Trophy className="h-12 w-12 text-green-500 opacity-20" />
+                </div>
+              </Card>
+
+              <Card className="p-6 border-l-4 border-blue-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Additional Donations</p>
+                    <p className="text-3xl font-bold text-blue-600">$0</p>
+                    <p className="text-xs text-gray-500 mt-1">Manual entries</p>
+                  </div>
+                  <Heart className="h-12 w-12 text-blue-500 opacity-20" />
+                </div>
+              </Card>
+
+              <Card className="p-6 border-l-4 border-orange-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Raised</p>
+                    <p className="text-3xl font-bold text-orange-600">${270 + 0}</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-orange-500 h-2 rounded-full transition-all"
+                        style={{ width: `${((270) / 400) * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{Math.round((270 / 400) * 100)}% of $400 goal</p>
+                  </div>
+                  <Target className="h-12 w-12 text-orange-500 opacity-20" />
+                </div>
+              </Card>
+            </div>
+
+            {/* Tournament Breakdown */}
             <Card className="p-6">
-              <h3 className="font-semibold mb-4">Fundraising Dashboard</h3>
-              <p className="text-gray-600 text-center py-8">Fundraising tracking interface coming next...</p>
+              <h3 className="font-semibold text-gray-900 mb-4">Tournament Revenue Breakdown</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-green-900">Registration Fees</p>
+                    <p className="text-sm text-green-600">Cash collected on tournament day</p>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">$120</p>
+                </div>
+                
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-blue-900">Sponsorship Revenue</p>
+                    <p className="text-sm text-blue-600">Local business sponsors</p>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600">$150</p>
+                </div>
+                
+                <div className="border-t pt-4">
+                  <div className="flex justify-between items-center">
+                    <p className="text-lg font-semibold text-gray-900">Tournament Total:</p>
+                    <p className="text-3xl font-bold text-green-600">$270</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Manual Donation Entry */}
+            <Card className="p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Record Additional Donations</h3>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p className="text-yellow-800 text-sm">
+                  <strong>Note:</strong> Use this form to record direct donations, additional sponsors, or other fundraising not captured in the tournament system.
+                </p>
+              </div>
+              
+              <form className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Donation Amount</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Donation Type</label>
+                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                      <option value="">Select type...</option>
+                      <option value="cash">Cash Donation</option>
+                      <option value="check">Check</option>
+                      <option value="sponsor">Additional Sponsor</option>
+                      <option value="fundraiser">Other Fundraising Event</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Donor Name/Organization</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      placeholder="Enter donor name"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Date Received</label>
+                    <input
+                      type="date"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                  <textarea
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Additional notes about this donation..."
+                  ></textarea>
+                </div>
+                
+                <Button
+                  type="submit"
+                  className="bg-orange-600 hover:bg-orange-700 px-6 py-2"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Record Donation
+                </Button>
+              </form>
+            </Card>
+
+            {/* Goal Progress */}
+            <Card className="p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Fundraising Goal Progress</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between text-lg">
+                  <span className="font-medium">Progress toward $400 goal:</span>
+                  <span className="font-bold text-orange-600">${270} / $400</span>
+                </div>
+                
+                <div className="w-full bg-gray-200 rounded-full h-6">
+                  <div 
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 h-6 rounded-full transition-all flex items-center justify-end pr-2"
+                    style={{ width: `${(270 / 400) * 100}%` }}
+                  >
+                    <span className="text-white text-sm font-medium">{Math.round((270 / 400) * 100)}%</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="text-green-600">
+                    <strong>Raised:</strong> $270
+                  </div>
+                  <div className="text-orange-600">
+                    <strong>Remaining:</strong> $130
+                  </div>
+                </div>
+              </div>
             </Card>
           </div>
         )}

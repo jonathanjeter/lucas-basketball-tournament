@@ -1,6 +1,6 @@
 // Supabase client configuration for Basketball Tournament App
 import { createClient } from '@supabase/supabase-js'
-import { sendRegistrationEmails } from './email'
+import { sendRegistrationEmails, sendVolunteerEmails } from './email'
 
 // =============================================================================
 // MULTI-ENVIRONMENT CONFIGURATION
@@ -669,25 +669,57 @@ export const getVolunteersForAdmin = async () => {
 // Add a new volunteer
 export const addVolunteer = async (volunteerData: any) => {
   try {
+    console.log('🔍 [addVolunteer] Input data:', volunteerData)
+    
+    // First, save volunteer to database with proper field mapping
     const { data, error } = await supabase
       .from('volunteers')
       .insert({
         volunteer_name: volunteerData.name,
-        age_or_rank: volunteerData.ageRank,
-        email: volunteerData.email,
-        phone: volunteerData.phone,
-        dates_available: volunteerData.datesAvailable,
-        transportation: volunteerData.transportation,
-        skills: volunteerData.skills,
-        role_preference: volunteerData.rolePreference,
-        questions: volunteerData.questions
+        age_or_rank: volunteerData.ageRank || volunteerData.ageOrRank || 'Adult', // Handle both field names
+        email: volunteerData.email || 'noemail@provided.com',
+        phone: volunteerData.phone || 'No phone provided',
+        dates_available: 'Saturday September 6, 2025 - Cemetery Headstone Restoration Project',
+        transportation: 'yes', // Default for cemetery project volunteers
+        skills: volunteerData.skills || null,
+        role_preference: volunteerData.rolePreference || null,
+        questions: volunteerData.questions || null
       })
       .select()
       .single()
 
-    return { data, error }
+    if (error) {
+      console.error('❌ [addVolunteer] Database error:', error)
+      return { data: null, error }
+    }
+
+    console.log('✅ [addVolunteer] Success:', data)
+
+    // Send volunteer confirmation emails
+    console.log('📧 Sending volunteer confirmation emails...')
+    try {
+      // Prepare email data with cemetery project details
+      const emailData = {
+        name: volunteerData.name,
+        email: volunteerData.email,
+        phone: volunteerData.phone,
+        ageRank: volunteerData.ageRank || volunteerData.ageOrRank || 'Adult',
+        projectDate: 'Saturday, September 6, 2025',
+        projectTime: '7:30 AM - 12:00 PM',
+        projectLocation: 'Pioneer Cemetery, Waxahachie, TX',
+        projectDescription: 'Cemetery headstone restoration with Sons of American Revolution'
+      }
+      
+      const emailResult = await sendVolunteerEmails(emailData)
+      console.log('📧 Email results:', emailResult)
+    } catch (emailError) {
+      console.warn('📧 Failed to send volunteer emails:', emailError)
+      // Don't fail the whole operation if email fails
+    }
+
+    return { data, error: null }
   } catch (error) {
-    console.error('Error adding volunteer:', error)
+    console.error('❌ [addVolunteer] Unexpected error:', error)
     return { data: null, error }
   }
 }
