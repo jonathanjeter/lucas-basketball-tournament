@@ -78,10 +78,10 @@ export const Sponsors: React.FC = () => {
           className="text-center mb-12"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Our Tournament Sponsors
+            Project Supporters
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Thank you to these amazing sponsors who make this tournament possible!
+            Thanks to our tournament sponsors and supporters who helped raise $270 for cemetery restoration supplies!
           </p>
         </motion.div>
 
@@ -121,8 +121,8 @@ export const Sponsors: React.FC = () => {
               Sponsor Opportunities Available!
             </h3>
             <p className="text-gray-500 max-w-md mx-auto">
-              We're looking for amazing sponsors to support our tournament. 
-              Contact us to learn about sponsorship opportunities starting at just $20.
+              Our tournament successfully raised $270 for cemetery restoration supplies! 
+              Now we need volunteers to help with the actual project work.
             </p>
           </div>
         )}

@@ -3,6 +3,8 @@ import { Hero } from '../components/Hero';
 import { Sponsors } from '../components/Sponsors';
 import { CemeteryProjectOverview } from '../components/CemeteryProjectOverview';
 import { TournamentSuccessCallout } from '../components/TournamentSuccessCallout';
+import { VolunteerRegistrationForm } from '../components/VolunteerRegistrationForm';
+import { CemeteryFundraisingProgress } from '../components/CemeteryFundraisingProgress';
 import { DatabaseTest } from '../components/DatabaseTest';
 import { getFundraisingStats } from '../lib/supabase';
 import { Link } from 'react-router-dom';
@@ -92,6 +94,9 @@ export const HomePage: React.FC = () => {
     <div>
       <Hero fundraisingStats={fundraisingStats} loading={loading} />
       
+      {/* Prominent Volunteer Registration Form - Above Fold */}
+      <VolunteerRegistrationForm />
+      
       {/* Emergency Volunteer Recruitment Banner */}
       <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -148,6 +153,9 @@ export const HomePage: React.FC = () => {
       
       {/* Updated Sponsors Section */}
       <Sponsors />
+      
+      {/* Cemetery Project Fundraising Progress */}
+      <CemeteryFundraisingProgress />
     </div>
   );
 };
