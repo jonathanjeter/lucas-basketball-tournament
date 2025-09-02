@@ -6,9 +6,17 @@ export const validateEmail = (email: string): boolean => {
 };
 
 export const validateUSPhone = (phone: string): boolean => {
-  // US phone format validation: (XXX) XXX-XXXX or (XXX)-XXX-XXXX or XXX-XXX-XXXX or XXXXXXXXXX
-  const phoneRegex = /^(\(?\d{3}\)?[\s\-]?)?\d{3}[\s\-]?\d{4}$/;
-  return phoneRegex.test(phone.replace(/\s/g, ''));
+  // Remove all non-digit characters for validation
+  const digitsOnly = phone.replace(/\D/g, '');
+  
+  // Must be 10 digits (US phone) or 11 digits (with country code 1)
+  if (digitsOnly.length === 10) {
+    return /^[2-9]\d{2}[2-9]\d{6}$/.test(digitsOnly); // Valid US area code and number
+  } else if (digitsOnly.length === 11 && digitsOnly[0] === '1') {
+    return /^1[2-9]\d{2}[2-9]\d{6}$/.test(digitsOnly); // With US country code
+  }
+  
+  return false;
 };
 
 export const validateEmailOrPhone = (email: string, phone: string): { isValid: boolean; message?: string } => {

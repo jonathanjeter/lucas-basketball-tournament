@@ -14,6 +14,7 @@ export const VolunteerRegistrationForm: React.FC = () => {
     email: '',
     phone: '',
     ageOrRank: '',
+    transportation: 'yes',
     skills: '',
     notes: ''
   });
@@ -27,16 +28,16 @@ export const VolunteerRegistrationForm: React.FC = () => {
     
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     
-    // Require at least email or phone
-    if (!formData.email.trim() && !formData.phone.trim()) {
-      newErrors.contact = 'Please provide either email or phone number';
-    } else {
-      if (formData.email && !validateEmail(formData.email)) {
-        newErrors.email = 'Please enter a valid email address';
-      }
-      if (formData.phone && !validateUSPhone(formData.phone)) {
-        newErrors.phone = 'Please enter a valid US phone number';
-      }
+    // Phone is now required for database constraint
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!validateUSPhone(formData.phone.trim())) {
+      newErrors.phone = 'Please enter a valid US phone number';
+    }
+    
+    // Email validation (if provided)
+    if (formData.email.trim() && !validateEmail(formData.email.trim())) {
+      newErrors.email = 'Please enter a valid email address';
     }
     
     setErrors(newErrors);
@@ -51,18 +52,21 @@ export const VolunteerRegistrationForm: React.FC = () => {
     setLoading(true);
     
     try {
-      // Insert volunteer data
+      // Insert volunteer data - ensure phone is never null
       const volunteerData = {
         volunteer_name: formData.name.trim(),
-        email: formData.email.trim() || null,
-        phone: formData.phone.trim() || null,
-        age_or_rank: formData.ageOrRank.trim() || null,
+        email: formData.email.trim() || 'noemail@provided.com',
+        phone: formData.phone.trim(), // Required field, never null
+        age_or_rank: formData.ageOrRank.trim() || 'Not specified',
         dates_available: 'Saturday September 6, 2025 - Cemetery Headstone Restoration Project',
-        skills: formData.skills.trim() || null,
-        transportation: 'To be confirmed',
-        questions: formData.notes.trim() || null,
-        role_preference: null
+        skills: formData.skills.trim() || 'None specified',
+        transportation: formData.transportation, // Use selected value from form
+        questions: formData.notes.trim() || 'None',
+        role_preference: 'General volunteer'
       };
+      
+      // Debug logging
+      console.log('Submitting volunteer data:', volunteerData);
       
       const { error: dbError } = await supabase.from('volunteers').insert([volunteerData]);
       
@@ -85,7 +89,20 @@ export const VolunteerRegistrationForm: React.FC = () => {
       
     } catch (error) {
       console.error('Error registering volunteer:', error);
-      setErrors({ submit: 'Registration failed. Please try again.' });
+      
+      // Provide specific error messages based on the error type
+      let errorMessage = 'Registration failed. Please try again.';
+      if (error instanceof Error) {
+        if (error.message.includes('phone')) {
+          errorMessage = 'Phone number validation failed. Please enter a valid US phone number.';
+        } else if (error.message.includes('email')) {
+          errorMessage = 'Email validation failed. Please check your email address.';
+        } else if (error.message.includes('constraint') || error.message.includes('null')) {
+          errorMessage = 'Missing required information. Please fill in all required fields.';
+        }
+      }
+      
+      setErrors({ submit: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -188,7 +205,7 @@ export const VolunteerRegistrationForm: React.FC = () => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className={`text-lg ${errors.email || errors.contact ? 'border-red-500' : ''}`}
+                    className={`text-lg ${errors.email ? 'border-red-500' : ''}`}
                     placeholder="your@email.com"
                   />
                   {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
@@ -196,23 +213,21 @@ export const VolunteerRegistrationForm: React.FC = () => {
 
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
+                    Phone Number *
                   </label>
                   <Input
                     id="phone"
                     type="tel"
+                    required
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className={`text-lg ${errors.phone || errors.contact ? 'border-red-500' : ''}`}
+                    className={`text-lg ${errors.phone ? 'border-red-500' : ''}`}
                     placeholder="(555) 123-4567"
                   />
                   {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
                 </div>
               </div>
 
-              {errors.contact && (
-                <p className="text-red-500 text-sm -mt-3">{errors.contact}</p>
-              )}
 
               {/* Age/Rank */}
               <div>
@@ -227,6 +242,23 @@ export const VolunteerRegistrationForm: React.FC = () => {
                   className="text-lg"
                   placeholder="e.g., 16, Eagle Scout, Adult"
                 />
+              </div>
+
+              {/* Transportation */}
+              <div>
+                <label htmlFor="transportation" className="block text-sm font-medium text-gray-700 mb-2">
+                  Transportation to Cemetery
+                </label>
+                <select
+                  id="transportation"
+                  value={formData.transportation}
+                  onChange={(e) => setFormData({...formData, transportation: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="yes">I can provide my own transportation</option>
+                  <option value="no">I need transportation assistance</option>
+                  <option value="sometimes">Transportation sometimes available</option>
+                </select>
               </div>
 
               {/* Skills */}
