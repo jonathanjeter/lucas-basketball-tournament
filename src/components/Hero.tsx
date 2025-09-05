@@ -85,7 +85,7 @@ export const Hero: React.FC<HeroProps> = ({ fundraisingStats, loading = false })
               <div className="flex items-center space-x-3">
                 <MapPin className="h-6 w-6 text-orange-400" />
                 <div>
-                  <div>Pioneer Cemetery, Waxahachie, TX</div>
+                  <div>Waxahachie Cemetery, Waxahachie, TX</div>
                   <div className="text-sm text-blue-200">Historic cemetery restoration with SAR training</div>
                 </div>
               </div>

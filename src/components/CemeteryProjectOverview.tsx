@@ -10,7 +10,7 @@ export const CemeteryProjectOverview: React.FC = () => {
     {
       icon: MapPin,
       title: 'Project Location',
-      description: 'Pioneer Cemetery, Waxahachie, TX\n802 Water St, Waxahachie, TX 75165\nHistoric cemetery with headstones dating to 1800s'
+      description: 'Waxahachie Cemetery, Waxahachie, TX\n802 Water St, Waxahachie, TX 75165\nHistoric cemetery with headstones dating to 1800s'
     },
     {
       icon: Clock,
@@ -51,7 +51,7 @@ export const CemeteryProjectOverview: React.FC = () => {
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Join Lucas's Eagle Scout project to preserve local history by restoring historic headstones 
-            at Pioneer Cemetery with professional SAR training and equipment.
+            at Waxahachie Cemetery with professional SAR training and equipment.
           </p>
         </motion.div>
 
@@ -181,7 +181,7 @@ export const CemeteryProjectOverview: React.FC = () => {
               Help Preserve Local History
             </h3>
             <p className="text-xl mb-6 text-blue-100">
-              Pioneer Cemetery contains headstones dating back to the 1800s. Your volunteer work 
+              Waxahachie Cemetery contains headstones dating back to the 1800s. Your volunteer work 
               will help preserve these historical markers for future generations while earning 
               community service hours.
             </p>

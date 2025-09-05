@@ -105,7 +105,7 @@ export const HomePage: React.FC = () => {
               <AlertTriangle className="h-8 w-8 animate-pulse" />
               <div>
                 <h3 className="text-xl font-bold">URGENT: Volunteers Needed THIS SATURDAY!</h3>
-                <p className="text-red-100">Pioneer Cemetery Project - Only 2-3 volunteers signed up, need 8-10+ minimum!</p>
+                <p className="text-red-100">Waxahachie Cemetery Project - Only 2-3 volunteers signed up, need 8-10+ minimum!</p>
               </div>
             </div>
             <div className="flex items-center space-x-6">

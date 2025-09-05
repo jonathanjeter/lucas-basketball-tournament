@@ -134,7 +134,7 @@ export const VolunteerRegistrationForm: React.FC = () => {
                 <div className="text-sm space-y-1">
                   <div>• Saturday, September 6, 2025</div>
                   <div>• 7:30 AM - 12:00 PM</div>
-                  <div>• Pioneer Cemetery, Waxahachie, TX</div>
+                  <div>• Waxahachie Cemetery, Waxahachie, TX</div>
                   <div>• Equipment and training provided</div>
                 </div>
               </div>
@@ -325,7 +325,7 @@ export const VolunteerRegistrationForm: React.FC = () => {
                     <div className="text-blue-800 text-sm space-y-1">
                       <div>📅 <strong>Date:</strong> Saturday, September 6, 2025</div>
                       <div>🕢 <strong>Time:</strong> 7:30 AM - 12:00 PM (4.5 hours)</div>
-                      <div>📍 <strong>Location:</strong> Pioneer Cemetery, Waxahachie, TX</div>
+                      <div>📍 <strong>Location:</strong> Waxahachie Cemetery, Waxahachie, TX</div>
                       <div>🛠️ <strong>Work:</strong> Headstone restoration with SAR training</div>
                       <div>👥 <strong>Ages:</strong> All welcome (minors with supervision)</div>
                       <div>🎒 <strong>Bring:</strong> Water, work gloves, work clothes</div>

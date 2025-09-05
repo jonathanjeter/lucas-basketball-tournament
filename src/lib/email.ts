@@ -363,7 +363,7 @@ const buildVolunteerEmailData = (volunteerData: any) => {
     volunteer_age_rank: volunteerData.ageRank || 'Not provided',
     project_date: 'Saturday, September 6, 2025',
     project_time: '7:30 AM - 12:00 PM',
-    project_location: 'Pioneer Cemetery, Waxahachie, TX',
+    project_location: 'Waxahachie Cemetery, Waxahachie, TX',
     project_details: 'Cemetery restoration with SAR training (minors OK with supervision)',
     contact_email: 'lucasjeter2025@gmail.com',
     contact_phone: '(469) 441-8526'

@@ -86,7 +86,7 @@
 **Eagle Scout Cemetery Restoration Project**
 - **Date**: Saturday, September 6, 2025
 - **Time**: 7:30 AM - 12:00 PM  
-- **Location**: Pioneer Cemetery, Waxahachie, TX
+- **Location**: Waxahachie Cemetery, Waxahachie, TX
 - **Partner**: Sons of American Revolution
 - **Training**: SAR provides on-site headstone preservation training
 - **Requirements**: Manual labor, no experience needed, equipment provided

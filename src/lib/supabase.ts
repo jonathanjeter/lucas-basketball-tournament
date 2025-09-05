@@ -706,7 +706,7 @@ export const addVolunteer = async (volunteerData: any) => {
         ageRank: volunteerData.ageRank || volunteerData.ageOrRank || 'Adult',
         projectDate: 'Saturday, September 6, 2025',
         projectTime: '7:30 AM - 12:00 PM',
-        projectLocation: 'Pioneer Cemetery, Waxahachie, TX',
+        projectLocation: 'Waxahachie Cemetery, Waxahachie, TX',
         projectDescription: 'Cemetery headstone restoration with Sons of American Revolution'
       }
       
